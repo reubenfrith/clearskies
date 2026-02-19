@@ -217,9 +217,19 @@ export function MapView() {
 
   return (
     <div className="relative" style={{ height: "calc(100vh - 48px)" }}>
+      {/* Always-visible debug strip — shows from first render before any async */}
+      <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 9999, background: "#1e293b", color: "#86efac", fontFamily: "monospace", fontSize: 11, padding: "4px 8px", display: "flex", gap: 16 }}>
+        <span>MAP RENDERED</span>
+        <span>apiReady={String(apiReady)}</span>
+        <span>loading={String(loading)}</span>
+        <span>livePositions={livePositions.size}</span>
+        <span>sites={sites.length}</span>
+        {debugLog.map((l, i) => <span key={i}>{l}</span>)}
+      </div>
+
       {/* Dev-mode badge */}
       {!liveAvailable && !loading && (
-        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] bg-amber-100 border border-amber-300 text-amber-800 text-xs px-3 py-1 rounded-full shadow">
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] bg-amber-100 border border-amber-300 text-amber-800 text-xs px-3 py-1 rounded-full shadow" style={{ marginTop: 24 }}>
           Live positions unavailable — open in MyGeotab for real-time tracking
         </div>
       )}
