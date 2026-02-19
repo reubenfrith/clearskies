@@ -3,8 +3,10 @@ import react from "@vitejs/plugin-react";
 
 export default defineConfig({
   plugins: [react()],
-  // GitHub Pages serves the app from /clearskies/ — base must match the repo name.
-  base: "/clearskies/",
+  // Use relative base so Vite outputs src="./assets/..." rather than src="/clearskies/assets/...".
+  // MyGeotab's add-in loader string-concatenates the add-in URL with script srcs, so an
+  // absolute base would produce double-path URLs (clearskies//clearskies/assets/...).
+  base: "./",
   // Build as a single HTML app — Geotab Add-In loads index.html and the
   // lifecycle callbacks (initialize/focus/blur) are registered globally.
   build: {
