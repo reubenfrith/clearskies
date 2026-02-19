@@ -30,7 +30,7 @@ declare global {
   interface Window {
     geotab: {
       addin: {
-        clearskies?: GeotabAddinLifecycle;
+        ClearSkies?: GeotabAddinLifecycle;
       };
     };
   }

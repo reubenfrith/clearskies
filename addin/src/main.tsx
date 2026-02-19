@@ -15,7 +15,7 @@ let root: ReactDOM.Root | null = null;
 window.geotab = window.geotab || {};
 window.geotab.addin = window.geotab.addin || {};
 
-window.geotab.addin.clearskies = {
+window.geotab.addin.ClearSkies = {
   initialize(_api, _state, callback) {
     // Store the live Geotab API ref so MapView can request live positions.
     setGeotabApi(_api);
