@@ -7,7 +7,7 @@ import { MapView } from "./pages/MapView.js";
 // Minimal nav — embedded inside MyGeotab which provides the outer chrome
 function Nav() {
   return (
-    <nav className="sticky top-0 z-[2000] bg-geotab-blue text-white px-4 py-2 flex items-center gap-6 text-sm font-medium">
+    <nav className="fixed top-0 left-0 right-0 z-[2000] bg-geotab-blue text-white px-4 py-2 flex items-center gap-6 text-sm font-medium">
       <span className="font-bold text-base">🌤️ ClearSkies</span>
       <Link to="/" className="hover:text-blue-200 transition-colors">Dashboard</Link>
       <Link to="/map" className="hover:text-blue-200 transition-colors">Map</Link>
@@ -18,9 +18,10 @@ function Nav() {
 
 export function App() {
   return (
-    <div className="h-screen flex flex-col bg-gray-50 font-sans overflow-hidden">
+    <div className="bg-gray-50 font-sans">
       <Nav />
-      <main className="flex-1 overflow-auto">
+      {/* pt-12 offsets the fixed nav (48px = 12 * 4px) */}
+      <main className="pt-12">
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/holds/:siteId" element={<HoldManagement />} />
