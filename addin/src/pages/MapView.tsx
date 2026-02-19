@@ -29,8 +29,9 @@ const VEH_ICON      = makeDotIcon("#eab308", 14);  // yellow — normal fleet ve
 const VEH_HOLD_ICON = makeDotIcon("#f97316", 16);  // orange — vehicle on active hold site
 
 // ─── Live position fetch ───────────────────────────────────────────────────────
-// DeviceStatusInfo does not support deviceSearch filtering per Geotab API docs.
-// Call Get with no search to retrieve all fleet vehicle statuses.
+// DeviceStatusInfo requires deviceSearch.deviceIds (plural) to return results.
+// Step 1: fetch all Device objects to collect IDs.
+// Step 2: query DeviceStatusInfo with those IDs.
 
 interface LivePosition {
   deviceId: string;
@@ -41,26 +42,39 @@ interface LivePosition {
   isDeviceCommunicating: boolean;
 }
 
-function fetchAllDeviceStatuses(
+function geotabGet<T>(api: { call: Function }, typeName: string, search?: object): Promise<T[]> {
+  return new Promise((resolve) => {
+    const params: Record<string, unknown> = { typeName };
+    if (search) params.search = search;
+    api.call("Get", params, (res: T[]) => resolve(res ?? []), () => resolve([]));
+  });
+}
+
+async function fetchAllDeviceStatuses(
   api: { call: Function }
 ): Promise<LivePosition[]> {
-  return new Promise((resolve) => {
-    api.call(
-      "Get",
-      { typeName: "DeviceStatusInfo" },
-      (results: unknown[]) => {
-        const positions: LivePosition[] = (results ?? []).map((r: any) => ({
-          deviceId: r.device?.id ?? "",
-          deviceName: r.device?.name ?? "Unknown",
-          lat: r.latitude ?? 0,
-          lng: r.longitude ?? 0,
-          speed: r.speed ?? 0,
-          isDeviceCommunicating: r.isDeviceCommunicating ?? false,
-        }));
-        resolve(positions);
-      },
-      () => resolve([]) // on error, fall back silently
-    );
+  // Get all devices so we have their IDs (and names as a fallback)
+  const devices = await geotabGet<{ id: string; name: string }>(api, "Device");
+  const deviceIds = devices.map((d) => d.id).filter(Boolean);
+  if (!deviceIds.length) return [];
+
+  const nameById = new Map(devices.map((d) => [d.id, d.name]));
+
+  // Query DeviceStatusInfo using deviceIds (plural) — this is what MyGeotab's own map sends
+  const results = await geotabGet<any>(api, "DeviceStatusInfo", {
+    deviceSearch: { deviceIds },
+  });
+
+  return results.map((r: any) => {
+    const id = r.device?.id ?? "";
+    return {
+      deviceId: id,
+      deviceName: r.device?.name ?? nameById.get(id) ?? "Unknown",
+      lat: r.latitude ?? 0,
+      lng: r.longitude ?? 0,
+      speed: r.speed ?? 0,
+      isDeviceCommunicating: r.isDeviceCommunicating ?? false,
+    };
   });
 }
 
