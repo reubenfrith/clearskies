@@ -201,7 +201,7 @@ export function MapView() {
       {/* Dev-mode badge */}
       {!liveAvailable && !loading && (
         <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] bg-amber-100 border border-amber-300 text-amber-800 text-xs px-3 py-1 rounded-full shadow">
-          Live positions unavailable (dev mode) — showing snapshot locations
+          Live positions unavailable — open in MyGeotab for real-time tracking
         </div>
       )}
 
