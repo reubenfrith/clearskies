@@ -1,3 +1,9 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Prevent the iframe document from scrolling — keeps the nav pinned */
+html, body, #root {
+  height: 100%;
+  overflow: hidden;
+}
