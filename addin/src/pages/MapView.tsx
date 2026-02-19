@@ -23,34 +23,35 @@ function makeDotIcon(colour: string, size: number) {
   });
 }
 
-const SITE_GREEN = makeDotIcon("#22c55e", 22);
-const SITE_RED   = makeDotIcon("#ef4444", 22);
-const VEH_ICON   = makeDotIcon("#eab308", 14);
+const SITE_GREEN    = makeDotIcon("#22c55e", 22);
+const SITE_RED      = makeDotIcon("#ef4444", 22);
+const VEH_ICON      = makeDotIcon("#eab308", 14);  // yellow — normal fleet vehicle
+const VEH_HOLD_ICON = makeDotIcon("#f97316", 16);  // orange — vehicle on active hold site
 
 // ─── Live position fetch ───────────────────────────────────────────────────────
+// DeviceStatusInfo does not support deviceSearch filtering per Geotab API docs.
+// Call Get with no search to retrieve all fleet vehicle statuses.
 
 interface LivePosition {
   deviceId: string;
+  deviceName: string;
   lat: number;
   lng: number;
   speed: number;
   isDeviceCommunicating: boolean;
 }
 
-function fetchLivePositions(
-  api: { call: Function },
-  deviceIds: string[]
+function fetchAllDeviceStatuses(
+  api: { call: Function }
 ): Promise<LivePosition[]> {
   return new Promise((resolve) => {
     api.call(
       "Get",
-      {
-        typeName: "DeviceStatusInfo",
-        search: { deviceSearch: { ids: deviceIds } },
-      },
+      { typeName: "DeviceStatusInfo" },
       (results: unknown[]) => {
         const positions: LivePosition[] = (results ?? []).map((r: any) => ({
           deviceId: r.device?.id ?? "",
+          deviceName: r.device?.name ?? "Unknown",
           lat: r.latitude ?? 0,
           lng: r.longitude ?? 0,
           speed: r.speed ?? 0,
@@ -85,31 +86,25 @@ function computeBounds(sites: Site[]): [[number, number], [number, number]] | nu
   ];
 }
 
-// ─── Vehicle marker with merged live/snapshot data ─────────────────────────────
+// ─── Snapshot vehicle marker (fallback when no live API) ──────────────────────
 
-interface VehicleMarkerProps {
+interface SnapshotVehicleMarkerProps {
   vehicle: VehicleOnSite;
-  livePos: LivePosition | undefined;
   siteName: string;
 }
 
-function VehicleMarker({ vehicle, livePos, siteName }: VehicleMarkerProps) {
-  const lat = livePos ? livePos.lat : vehicle.lat;
-  const lng = livePos ? livePos.lng : vehicle.lng;
-  const speed = livePos ? livePos.speed : vehicle.speed;
-  const source = livePos ? "live" : "snapshot";
-
+function SnapshotVehicleMarker({ vehicle, siteName }: SnapshotVehicleMarkerProps) {
+  const { lat, lng } = vehicle;
   if (!lat || !lng) return null;
-
   return (
-    <Marker position={[lat, lng]} icon={VEH_ICON}>
+    <Marker position={[lat, lng]} icon={VEH_HOLD_ICON}>
       <Popup>
         <div className="text-sm space-y-0.5 min-w-[140px]">
           <p className="font-semibold">{vehicle.device_name}</p>
           <p className="text-gray-600">{vehicle.driver_name ?? "Unknown driver"}</p>
           <p className="text-gray-500">{siteName}</p>
-          <p className="text-gray-500">{speed} mph</p>
-          <p className="text-xs text-gray-400 mt-1">Position: {source}</p>
+          <p className="text-gray-500">{vehicle.speed} mph</p>
+          <p className="text-xs text-gray-400 mt-1">Position: snapshot</p>
         </div>
       </Popup>
     </Marker>
@@ -122,6 +117,7 @@ export function MapView() {
   const { apiRef, apiReady } = useGeotabApi();
   const [sites, setSites] = useState<SiteWithStatus[]>([]);
   const [livePositions, setLivePositions] = useState<Map<string, LivePosition>>(new Map());
+  const [onHoldDeviceIds, setOnHoldDeviceIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
@@ -157,24 +153,24 @@ export function MapView() {
       setLastRefresh(new Date());
       setError(null);
 
-      // Attempt live positions from Geotab API
+      // Track which device IDs are currently on an active-hold site (for colour-coding)
+      const holdDeviceIds = new Set<string>(
+        (holdsData as HoldRecord[]).flatMap(
+          (h) => (h.vehicles_on_site ?? []).map((v) => v.device_id)
+        )
+      );
+      setOnHoldDeviceIds(holdDeviceIds);
+
+      // Fetch live positions from Geotab API (all fleet vehicles, no filter)
       const api = apiRef.current;
       if (api) {
         setLiveAvailable(true);
-        const allVehicles = (holdsData as HoldRecord[]).flatMap(
-          (h) => h.vehicles_on_site ?? []
-        );
-        const deviceIds = [...new Set(allVehicles.map((v) => v.device_id))];
-        if (deviceIds.length > 0) {
-          const positions = await fetchLivePositions(api, deviceIds);
-          const posMap = new Map<string, LivePosition>();
-          for (const p of positions) {
-            posMap.set(p.deviceId, p);
-          }
-          setLivePositions(posMap);
-        } else {
-          setLivePositions(new Map());
+        const positions = await fetchAllDeviceStatuses(api);
+        const posMap = new Map<string, LivePosition>();
+        for (const p of positions) {
+          if (p.lat && p.lng) posMap.set(p.deviceId, p);
         }
+        setLivePositions(posMap);
       } else {
         setLiveAvailable(false);
         setLivePositions(new Map());
@@ -275,19 +271,47 @@ export function MapView() {
           </Marker>
         ))}
 
-        {/* Vehicle markers */}
-        {sites
-          .filter((s) => s.status === "red" && s.activeHold)
-          .flatMap((s) =>
-            (s.activeHold!.vehicles_on_site ?? []).map((v) => (
-              <VehicleMarker
-                key={v.device_id}
-                vehicle={v}
-                livePos={livePositions.get(v.device_id)}
-                siteName={s.name}
-              />
-            ))
-          )}
+        {/* Live vehicle markers — all fleet vehicles when Geotab API is available.
+            Orange = on an active-hold site; yellow = rest of fleet. */}
+        {livePositions.size > 0 &&
+          [...livePositions.values()].map((pos) => {
+            const isOnHold = onHoldDeviceIds.has(pos.deviceId);
+            return (
+              <Marker
+                key={pos.deviceId}
+                position={[pos.lat, pos.lng]}
+                icon={isOnHold ? VEH_HOLD_ICON : VEH_ICON}
+              >
+                <Popup>
+                  <div className="text-sm space-y-0.5 min-w-[140px]">
+                    <p className="font-semibold">{pos.deviceName}</p>
+                    {isOnHold && (
+                      <p className="text-orange-600 font-medium text-xs">On Active Hold Site</p>
+                    )}
+                    <p className="text-gray-500">{pos.speed} mph</p>
+                    {!pos.isDeviceCommunicating && (
+                      <p className="text-xs text-gray-400">Not communicating</p>
+                    )}
+                    <p className="text-xs text-gray-400 mt-1">Position: live</p>
+                  </div>
+                </Popup>
+              </Marker>
+            );
+          })}
+
+        {/* Snapshot vehicle markers — fallback when no live API available */}
+        {livePositions.size === 0 &&
+          sites
+            .filter((s) => s.status === "red" && s.activeHold)
+            .flatMap((s) =>
+              (s.activeHold!.vehicles_on_site ?? []).map((v) => (
+                <SnapshotVehicleMarker
+                  key={v.device_id}
+                  vehicle={v}
+                  siteName={s.name}
+                />
+              ))
+            )}
       </MapContainer>
     </div>
   );
