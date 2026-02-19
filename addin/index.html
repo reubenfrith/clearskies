@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ClearSkies</title>
+    <!-- Geotab Add-In namespace registration must happen before React mounts -->
+    <script>
+      // Reserve the global geotab.addin namespace so MyGeotab can find our hooks.
+      // The actual lifecycle functions are registered by main.tsx after React loads.
+      window.geotab = window.geotab || {};
+      window.geotab.addin = window.geotab.addin || {};
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

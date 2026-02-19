@@ -1,0 +1,16 @@
+{
+  "name": "ClearSkies",
+  "supportEmail": "support@clearskies.app",
+  "version": "1.0.0",
+  "items": [
+    {
+      "url": "https://reubenfrith.github.io/clearskies/index.html",
+      "path": "ActivityLink/",
+      "menuName": {
+        "en": "ClearSkies"
+      },
+      "icon": "https://reubenfrith.github.io/clearskies/icon.svg"
+    }
+  ],
+  "files": {}
+}

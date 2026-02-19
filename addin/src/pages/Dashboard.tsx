@@ -1,0 +1,117 @@
+import { useEffect, useState, useCallback } from "react";
+import { supabase } from "../lib/supabase.js";
+import type { Site, HoldRecord, SiteWithStatus } from "../lib/types.js";
+import { SiteCard } from "../components/SiteCard.js";
+
+const REFRESH_INTERVAL_MS = 30_000;
+
+function deriveSiteStatus(hold: HoldRecord | null): SiteWithStatus["status"] {
+  if (!hold) return "green";
+  return "red";
+}
+
+export function Dashboard() {
+  const [sites, setSites] = useState<SiteWithStatus[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
+
+  const load = useCallback(async () => {
+    try {
+      // Fetch sites + their active holds in parallel
+      const [{ data: sitesData, error: sitesErr }, { data: holdsData, error: holdsErr }] =
+        await Promise.all([
+          supabase.from("sites").select("*").eq("active", true).order("name"),
+          supabase.from("holds_log").select("*").is("all_clear_at", null),
+        ]);
+
+      if (sitesErr) throw new Error(sitesErr.message);
+      if (holdsErr) throw new Error(holdsErr.message);
+
+      const holdsBySite = new Map<string, HoldRecord>();
+      for (const h of (holdsData ?? []) as HoldRecord[]) {
+        holdsBySite.set(h.site_id, h);
+      }
+
+      const withStatus: SiteWithStatus[] = (sitesData as Site[]).map((s) => {
+        const hold = holdsBySite.get(s.id) ?? null;
+        return {
+          ...s,
+          status: deriveSiteStatus(hold),
+          activeHold: hold,
+          weather: hold?.weather_snapshot ?? null,
+        };
+      });
+
+      setSites(withStatus);
+      setLastRefresh(new Date());
+      setError(null);
+    } catch (err) {
+      setError(String(err));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+    const id = setInterval(load, REFRESH_INTERVAL_MS);
+    return () => clearInterval(id);
+  }, [load]);
+
+  const redCount = sites.filter((s) => s.status === "red").length;
+  const greenCount = sites.filter((s) => s.status === "green").length;
+
+  return (
+    <div className="p-4 space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-bold text-gray-900">ClearSkies Dashboard</h1>
+          <p className="text-sm text-gray-500">
+            {sites.length} site(s) monitored •{" "}
+            <span className="text-red-600 font-medium">{redCount} hold(s) active</span>
+            {" / "}
+            <span className="text-green-600 font-medium">{greenCount} clear</span>
+          </p>
+        </div>
+        <div className="text-right">
+          <button
+            onClick={load}
+            className="text-xs text-geotab-blue hover:underline"
+          >
+            Refresh
+          </button>
+          <p className="text-xs text-gray-400 mt-0.5">
+            Updated {lastRefresh.toLocaleTimeString()}
+          </p>
+        </div>
+      </div>
+
+      {/* Error */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded p-3 text-sm text-red-700">
+          {error}
+        </div>
+      )}
+
+      {/* Loading */}
+      {loading && (
+        <div className="text-sm text-gray-500 animate-pulse">Loading sites…</div>
+      )}
+
+      {/* Site cards */}
+      {!loading && sites.length === 0 && (
+        <p className="text-sm text-gray-500 italic">
+          No active sites found. Add sites to the <code>sites</code> table in Supabase.
+        </p>
+      )}
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        {sites.map((site) => (
+          <SiteCard key={site.id} site={site} />
+        ))}
+      </div>
+    </div>
+  );
+}

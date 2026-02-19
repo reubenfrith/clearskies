@@ -1,0 +1,37 @@
+# Dependencies
+**/node_modules/
+
+# Build outputs
+**/dist/
+**/build/
+**/.vite/
+**/.turbo/
+**/.cache/
+coverage/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment files
+.env
+.env.*
+**/.env
+**/.env.*
+!.env.example
+!**/.env.example
+
+# TypeScript
+*.tsbuildinfo
+
+# Supabase local state
+supabase/.temp/
+
+# macOS / editor artifacts
+.DS_Store
+.vscode/
+.idea/
+
