@@ -218,12 +218,15 @@ export function MapView() {
   return (
     <div className="relative" style={{ height: "calc(100vh - 48px)" }}>
       {/* Always-visible debug strip — shows from first render before any async */}
-      <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 9999, background: "#1e293b", color: "#86efac", fontFamily: "monospace", fontSize: 11, padding: "4px 8px", display: "flex", gap: 16 }}>
+      <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 9999, background: "#1e293b", color: "#86efac", fontFamily: "monospace", fontSize: 11, padding: "4px 8px", display: "flex", gap: 16, flexWrap: "wrap" }}>
         <span>MAP RENDERED</span>
         <span>apiReady={String(apiReady)}</span>
         <span>loading={String(loading)}</span>
         <span>livePositions={livePositions.size}</span>
         <span>sites={sites.length}</span>
+        <span>initCalled={(window as any).__cs_init_count ?? 0}</span>
+        <span>apiType={(window as any).__cs_api_type ?? "?"}</span>
+        <span>hasCall={(window as any).__cs_api_has_call ?? "?"}</span>
         {debugLog.map((l, i) => <span key={i}>{l}</span>)}
       </div>
 
