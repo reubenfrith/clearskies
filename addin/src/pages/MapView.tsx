@@ -55,15 +55,18 @@ async function fetchAllDeviceStatuses(
 ): Promise<LivePosition[]> {
   // Get all devices so we have their IDs (and names as a fallback)
   const devices = await geotabGet<{ id: string; name: string }>(api, "Device");
+  console.log("[ClearSkies] Devices fetched:", devices.length, devices.slice(0, 3));
   const deviceIds = devices.map((d) => d.id).filter(Boolean);
   if (!deviceIds.length) return [];
 
   const nameById = new Map(devices.map((d) => [d.id, d.name]));
 
   // Query DeviceStatusInfo using deviceIds (plural) — this is what MyGeotab's own map sends
+  console.log("[ClearSkies] Querying DeviceStatusInfo for", deviceIds.length, "devices");
   const results = await geotabGet<any>(api, "DeviceStatusInfo", {
     deviceSearch: { deviceIds },
   });
+  console.log("[ClearSkies] DeviceStatusInfo raw results:", results.length, results.slice(0, 2));
 
   return results.map((r: any) => {
     const id = r.device?.id ?? "";
@@ -175,15 +178,19 @@ export function MapView() {
       );
       setOnHoldDeviceIds(holdDeviceIds);
 
-      // Fetch live positions from Geotab API (all fleet vehicles, no filter)
+      // Fetch live positions from Geotab API (all fleet vehicles)
       const api = apiRef.current;
+      console.log("[ClearSkies] apiRef.current:", api);
       if (api) {
         setLiveAvailable(true);
         const positions = await fetchAllDeviceStatuses(api);
+        console.log("[ClearSkies] DeviceStatusInfo results:", positions.length, positions);
         const posMap = new Map<string, LivePosition>();
         for (const p of positions) {
-          if (p.lat && p.lng) posMap.set(p.deviceId, p);
+          // Keep any position with non-zero coords
+          if (p.lat !== 0 || p.lng !== 0) posMap.set(p.deviceId, p);
         }
+        console.log("[ClearSkies] posMap size:", posMap.size);
         setLivePositions(posMap);
       } else {
         setLiveAvailable(false);
