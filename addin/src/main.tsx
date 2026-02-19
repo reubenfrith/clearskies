@@ -25,14 +25,17 @@ if (container) ReactDOM.createRoot(container).render(
 window.geotab = window.geotab || {};
 window.geotab.addin = window.geotab.addin || {};
 
-window.geotab.addin.clearskies = {
-  initialize(_api, _state, callback) {
-    (window as any).__cs_init_count = ((window as any).__cs_init_count ?? 0) + 1;
-    (window as any).__cs_api_type = typeof _api;
-    (window as any).__cs_api_has_call = typeof (_api as any)?.call;
-    setGeotabApi(_api);
-    callback();
-  },
-  focus(_api, _state) {},
-  blur(_api, _state) {},
+// Geotab requires a factory function — it calls clearskies() to get the lifecycle object.
+window.geotab.addin.clearskies = function () {
+  return {
+    initialize(_api: any, _state: any, callback: () => void) {
+      (window as any).__cs_init_count = ((window as any).__cs_init_count ?? 0) + 1;
+      (window as any).__cs_api_type = typeof _api;
+      (window as any).__cs_api_has_call = typeof _api?.call;
+      setGeotabApi(_api);
+      callback();
+    },
+    focus(_api: any, _state: any) {},
+    blur(_api: any, _state: any) {},
+  };
 };
