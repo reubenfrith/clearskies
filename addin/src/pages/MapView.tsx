@@ -199,7 +199,7 @@ export function MapView() {
     : [36.1699, -115.1398];
 
   return (
-    <div className="relative" style={{ height: "calc(100vh - 48px)" }}>
+    <div className="relative" style={{ height: "100%" }}>
       {/* Dev-mode badge */}
       {!liveAvailable && !loading && (
         <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] bg-amber-100 border border-amber-300 text-amber-800 text-xs px-3 py-1 rounded-full shadow">

@@ -18,9 +18,9 @@ function Nav() {
 
 export function App() {
   return (
-    <div className="min-h-screen bg-gray-50 font-sans">
+    <div className="h-screen flex flex-col bg-gray-50 font-sans overflow-hidden">
       <Nav />
-      <main>
+      <main className="flex-1 overflow-auto">
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/holds/:siteId" element={<HoldManagement />} />
