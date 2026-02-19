@@ -30,7 +30,8 @@ declare global {
   interface Window {
     geotab: {
       addin: {
-        clearskies?: GeotabAddinLifecycle;
+        // Geotab expects a factory function that returns the lifecycle object.
+        clearskies?: () => GeotabAddinLifecycle;
       };
     };
   }
