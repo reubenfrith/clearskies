@@ -7,7 +7,7 @@ import { MapView } from "./pages/MapView.js";
 // Minimal nav — embedded inside MyGeotab which provides the outer chrome
 function Nav() {
   return (
-    <nav className="bg-geotab-blue text-white px-4 py-2 flex items-center gap-6 text-sm font-medium">
+    <nav className="sticky top-0 z-[2000] bg-geotab-blue text-white px-4 py-2 flex items-center gap-6 text-sm font-medium">
       <span className="font-bold text-base">🌤️ ClearSkies</span>
       <Link to="/" className="hover:text-blue-200 transition-colors">Dashboard</Link>
       <Link to="/map" className="hover:text-blue-200 transition-colors">Map</Link>
