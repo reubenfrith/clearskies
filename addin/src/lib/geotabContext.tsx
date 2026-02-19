@@ -1,27 +1,41 @@
-import React, { createContext, useContext, useRef } from "react";
+import React, { createContext, useContext, useRef, useState } from "react";
 import type { GeotabApi } from "../geotab.js";
 
-type ApiRef = React.MutableRefObject<GeotabApi | null>;
+interface GeotabContextValue {
+  apiRef: React.MutableRefObject<GeotabApi | null>;
+  /** Flips to true when MyGeotab calls initialize() and passes the API. */
+  apiReady: boolean;
+}
 
-const GeotabContext = createContext<ApiRef>({ current: null });
+const GeotabContext = createContext<GeotabContextValue>({
+  apiRef: { current: null },
+  apiReady: false,
+});
 
-// Module-level ref so main.tsx can call setGeotabApi without needing
-// a hook (i.e. before React mounts).
-let _contextRef: ApiRef | null = null;
+// Module-level handles so setGeotabApi() can be called from main.tsx
+// before or after the provider mounts.
+let _apiRef: React.MutableRefObject<GeotabApi | null> | null = null;
+let _setApiReady: ((ready: boolean) => void) | null = null;
 
 export function setGeotabApi(api: GeotabApi) {
-  if (_contextRef) {
-    _contextRef.current = api;
-  }
+  if (_apiRef) _apiRef.current = api;
+  if (_setApiReady) _setApiReady(true);
 }
 
 export function GeotabProvider({ children }: { children: React.ReactNode }) {
   const ref = useRef<GeotabApi | null>(null);
-  _contextRef = ref;
-  return <GeotabContext.Provider value={ref}>{children}</GeotabContext.Provider>;
+  const [apiReady, setApiReady] = useState(false);
+
+  _apiRef = ref;
+  _setApiReady = setApiReady;
+
+  return (
+    <GeotabContext.Provider value={{ apiRef: ref, apiReady }}>
+      {children}
+    </GeotabContext.Provider>
+  );
 }
 
-/** Returns the mutable ref. Check `.current` — null means running in dev mode. */
-export function useGeotabApi(): ApiRef {
+export function useGeotabApi(): GeotabContextValue {
   return useContext(GeotabContext);
 }

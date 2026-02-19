@@ -119,7 +119,7 @@ function VehicleMarker({ vehicle, livePos, siteName }: VehicleMarkerProps) {
 // ─── Main component ────────────────────────────────────────────────────────────
 
 export function MapView() {
-  const apiRef = useGeotabApi();
+  const { apiRef, apiReady } = useGeotabApi();
   const [sites, setSites] = useState<SiteWithStatus[]>([]);
   const [livePositions, setLivePositions] = useState<Map<string, LivePosition>>(new Map());
   const [loading, setLoading] = useState(true);
@@ -184,7 +184,7 @@ export function MapView() {
     } finally {
       setLoading(false);
     }
-  }, [apiRef]);
+  }, [apiRef, apiReady]);
 
   useEffect(() => {
     load();
