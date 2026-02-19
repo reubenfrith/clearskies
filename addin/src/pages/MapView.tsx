@@ -139,6 +139,7 @@ export function MapView() {
   const [error, setError] = useState<string | null>(null);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
   const [liveAvailable, setLiveAvailable] = useState(false);
+  const [debugLog, setDebugLog] = useState<string[]>([]);
 
   const load = useCallback(async () => {
     try {
@@ -180,22 +181,23 @@ export function MapView() {
 
       // Fetch live positions from Geotab API (all fleet vehicles)
       const api = apiRef.current;
-      console.log("[ClearSkies] apiRef.current:", api);
+      const dbg: string[] = [`apiReady=${apiReady} api=${api ? "yes" : "null"}`];
       if (api) {
         setLiveAvailable(true);
         const positions = await fetchAllDeviceStatuses(api);
-        console.log("[ClearSkies] DeviceStatusInfo results:", positions.length, positions);
+        dbg.push(`DeviceStatusInfo: ${positions.length} results`);
+        if (positions[0]) dbg.push(`sample: ${JSON.stringify(positions[0])}`);
         const posMap = new Map<string, LivePosition>();
         for (const p of positions) {
-          // Keep any position with non-zero coords
           if (p.lat !== 0 || p.lng !== 0) posMap.set(p.deviceId, p);
         }
-        console.log("[ClearSkies] posMap size:", posMap.size);
+        dbg.push(`posMap size (non-zero coords): ${posMap.size}`);
         setLivePositions(posMap);
       } else {
         setLiveAvailable(false);
         setLivePositions(new Map());
       }
+      setDebugLog(dbg);
     } catch (err) {
       setError(String(err));
     } finally {
@@ -239,6 +241,13 @@ export function MapView() {
       {error && (
         <div className="absolute top-3 left-3 z-[1000] bg-red-50 border border-red-200 text-red-700 text-xs px-3 py-2 rounded shadow max-w-xs">
           {error}
+        </div>
+      )}
+
+      {/* Debug panel — remove once vehicles are working */}
+      {debugLog.length > 0 && (
+        <div className="absolute bottom-3 left-3 z-[1000] bg-black/80 text-green-400 text-xs font-mono px-3 py-2 rounded shadow max-w-sm">
+          {debugLog.map((line, i) => <div key={i}>{line}</div>)}
         </div>
       )}
 
