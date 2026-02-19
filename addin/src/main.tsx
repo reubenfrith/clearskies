@@ -51,9 +51,9 @@ window.geotab.addin.clearskies = {
   },
 };
 
-// ─── Standalone dev mode ──────────────────────────────────────────────────────
-// When running outside of MyGeotab (vite dev server), mount directly.
-if (!window.location.hostname.includes("geotab") && import.meta.env.DEV) {
+// ─── Standalone mode (dev server + GitHub Pages + any non-Geotab host) ────────
+// MyGeotab calls initialize() above; everywhere else we mount directly.
+if (!window.location.hostname.includes("geotab")) {
   const container = document.getElementById("root");
   if (container && !root) {
     root = ReactDOM.createRoot(container);
