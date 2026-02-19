@@ -1,6 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { HashRouter } from "react-router-dom";
+import { MemoryRouter } from "react-router-dom";
 import { App } from "./App.js";
 import "./index.css";
 import "leaflet/dist/leaflet.css";
@@ -12,9 +12,9 @@ const container = document.getElementById("root");
 if (container) ReactDOM.createRoot(container).render(
       <React.StrictMode>
         <GeotabProvider>
-          <HashRouter>
+          <MemoryRouter>
             <App />
-          </HashRouter>
+          </MemoryRouter>
         </GeotabProvider>
       </React.StrictMode>
   );
