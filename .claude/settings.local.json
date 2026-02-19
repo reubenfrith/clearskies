@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:developers.geotab.com)",
+      "Bash(npx tsc:*)",
+      "Bash(npm install)",
+      "Bash(npm run build:*)",
+      "Bash(ls:*)",
+      "Bash(supabase db push:*)",
+      "Bash(npm run typecheck:*)"
+    ]
+  }
+}
