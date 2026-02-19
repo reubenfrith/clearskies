@@ -29,9 +29,6 @@ window.geotab.addin = window.geotab.addin || {};
 window.geotab.addin.clearskies = function () {
   return {
     initialize(_api: any, _state: any, callback: () => void) {
-      (window as any).__cs_init_count = ((window as any).__cs_init_count ?? 0) + 1;
-      (window as any).__cs_api_type = typeof _api;
-      (window as any).__cs_api_has_call = typeof _api?.call;
       setGeotabApi(_api);
       callback();
     },

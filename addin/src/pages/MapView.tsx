@@ -53,20 +53,15 @@ function geotabGet<T>(api: { call: Function }, typeName: string, search?: object
 async function fetchAllDeviceStatuses(
   api: { call: Function }
 ): Promise<LivePosition[]> {
-  // Get all devices so we have their IDs (and names as a fallback)
   const devices = await geotabGet<{ id: string; name: string }>(api, "Device");
-  console.log("[ClearSkies] Devices fetched:", devices.length, devices.slice(0, 3));
   const deviceIds = devices.map((d) => d.id).filter(Boolean);
   if (!deviceIds.length) return [];
 
   const nameById = new Map(devices.map((d) => [d.id, d.name]));
 
-  // Query DeviceStatusInfo using deviceIds (plural) — this is what MyGeotab's own map sends
-  console.log("[ClearSkies] Querying DeviceStatusInfo for", deviceIds.length, "devices");
   const results = await geotabGet<any>(api, "DeviceStatusInfo", {
     deviceSearch: { deviceIds },
   });
-  console.log("[ClearSkies] DeviceStatusInfo raw results:", results.length, results.slice(0, 2));
 
   return results.map((r: any) => {
     const id = r.device?.id ?? "";
@@ -105,12 +100,7 @@ function computeBounds(sites: Site[]): [[number, number], [number, number]] | nu
 
 // ─── Snapshot vehicle marker (fallback when no live API) ──────────────────────
 
-interface SnapshotVehicleMarkerProps {
-  vehicle: VehicleOnSite;
-  siteName: string;
-}
-
-function SnapshotVehicleMarker({ vehicle, siteName }: SnapshotVehicleMarkerProps) {
+function SnapshotVehicleMarker({ vehicle, siteName }: { vehicle: VehicleOnSite; siteName: string }) {
   const { lat, lng } = vehicle;
   if (!lat || !lng) return null;
   return (
@@ -139,7 +129,6 @@ export function MapView() {
   const [error, setError] = useState<string | null>(null);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
   const [liveAvailable, setLiveAvailable] = useState(false);
-  const [debugLog, setDebugLog] = useState<string[]>([]);
 
   const load = useCallback(async () => {
     try {
@@ -171,7 +160,7 @@ export function MapView() {
       setLastRefresh(new Date());
       setError(null);
 
-      // Track which device IDs are currently on an active-hold site (for colour-coding)
+      // Track which device IDs are on an active-hold site (for colour-coding)
       const holdDeviceIds = new Set<string>(
         (holdsData as HoldRecord[]).flatMap(
           (h) => (h.vehicles_on_site ?? []).map((v) => v.device_id)
@@ -181,23 +170,18 @@ export function MapView() {
 
       // Fetch live positions from Geotab API (all fleet vehicles)
       const api = apiRef.current;
-      const dbg: string[] = [`apiReady=${apiReady} api=${api ? "yes" : "null"}`];
       if (api) {
         setLiveAvailable(true);
         const positions = await fetchAllDeviceStatuses(api);
-        dbg.push(`DeviceStatusInfo: ${positions.length} results`);
-        if (positions[0]) dbg.push(`sample: ${JSON.stringify(positions[0])}`);
         const posMap = new Map<string, LivePosition>();
         for (const p of positions) {
           if (p.lat !== 0 || p.lng !== 0) posMap.set(p.deviceId, p);
         }
-        dbg.push(`posMap size (non-zero coords): ${posMap.size}`);
         setLivePositions(posMap);
       } else {
         setLiveAvailable(false);
         setLivePositions(new Map());
       }
-      setDebugLog(dbg);
     } catch (err) {
       setError(String(err));
     } finally {
@@ -210,29 +194,15 @@ export function MapView() {
   }, [load]);
 
   const bounds = computeBounds(sites);
-  // Default centre: Las Vegas area if no sites yet
   const defaultCenter: [number, number] = bounds
     ? [(bounds[0][0] + bounds[1][0]) / 2, (bounds[0][1] + bounds[1][1]) / 2]
     : [36.1699, -115.1398];
 
   return (
     <div className="relative" style={{ height: "calc(100vh - 48px)" }}>
-      {/* Always-visible debug strip — shows from first render before any async */}
-      <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 9999, background: "#1e293b", color: "#86efac", fontFamily: "monospace", fontSize: 11, padding: "4px 8px", display: "flex", gap: 16, flexWrap: "wrap" }}>
-        <span>MAP RENDERED</span>
-        <span>apiReady={String(apiReady)}</span>
-        <span>loading={String(loading)}</span>
-        <span>livePositions={livePositions.size}</span>
-        <span>sites={sites.length}</span>
-        <span>initCalled={(window as any).__cs_init_count ?? 0}</span>
-        <span>apiType={(window as any).__cs_api_type ?? "?"}</span>
-        <span>hasCall={(window as any).__cs_api_has_call ?? "?"}</span>
-        {debugLog.map((l, i) => <span key={i}>{l}</span>)}
-      </div>
-
       {/* Dev-mode badge */}
       {!liveAvailable && !loading && (
-        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] bg-amber-100 border border-amber-300 text-amber-800 text-xs px-3 py-1 rounded-full shadow" style={{ marginTop: 24 }}>
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] bg-amber-100 border border-amber-300 text-amber-800 text-xs px-3 py-1 rounded-full shadow">
           Live positions unavailable — open in MyGeotab for real-time tracking
         </div>
       )}
@@ -254,13 +224,6 @@ export function MapView() {
       {error && (
         <div className="absolute top-3 left-3 z-[1000] bg-red-50 border border-red-200 text-red-700 text-xs px-3 py-2 rounded shadow max-w-xs">
           {error}
-        </div>
-      )}
-
-      {/* Debug panel — remove once vehicles are working */}
-      {debugLog.length > 0 && (
-        <div className="absolute bottom-3 left-3 z-[1000] bg-black/80 text-green-400 text-xs font-mono px-3 py-2 rounded shadow max-w-sm">
-          {debugLog.map((line, i) => <div key={i}>{line}</div>)}
         </div>
       )}
 
@@ -314,7 +277,7 @@ export function MapView() {
           </Marker>
         ))}
 
-        {/* Live vehicle markers — all fleet vehicles when Geotab API is available.
+        {/* Live vehicle markers — all fleet vehicles.
             Orange = on an active-hold site; yellow = rest of fleet. */}
         {livePositions.size > 0 &&
           [...livePositions.values()].map((pos) => {
