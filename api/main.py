@@ -32,12 +32,12 @@ app = FastAPI(title="ClearSkies API", version="1.0.0", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
+        "https://my.geotab.com",
         "https://reubenfrith.github.io",
         "http://localhost:5173",
         "http://localhost:3000",
         "http://localhost:4173",
     ],
-    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
