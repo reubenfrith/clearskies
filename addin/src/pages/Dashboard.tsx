@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { api } from "../lib/api.js";
-import type { Site, HoldRecord, SiteWithStatus } from "../lib/types.js";
+import type { HoldRecord, SiteWithStatus } from "../lib/types.js";
 import { SiteCard } from "../components/SiteCard.js";
 
 const REFRESH_INTERVAL_MS = 30_000;
