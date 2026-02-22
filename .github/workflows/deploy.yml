@@ -38,6 +38,7 @@ jobs:
         working-directory: addin
         env:
           VITE_API_URL: ${{ secrets.VITE_API_URL }}
+          VITE_API_KEY: ${{ secrets.VITE_API_KEY }}
 
       - uses: actions/upload-pages-artifact@v3
         with:
