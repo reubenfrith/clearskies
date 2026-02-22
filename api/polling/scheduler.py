@@ -13,10 +13,10 @@ from datetime import datetime, timezone
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
-from api.polling.weather import fetch_weather
-from api.polling.thresholds import evaluate_thresholds, should_clear_hold
-from api.polling.geotab import get_vehicles_in_zone, authenticate
-from api.polling.alerts import send_hold_alerts, send_all_clear_alerts
+from polling.weather import fetch_weather
+from polling.thresholds import evaluate_thresholds, should_clear_hold
+from polling.geotab import get_vehicles_in_zone, authenticate
+from polling.alerts import send_hold_alerts, send_all_clear_alerts
 
 logger = logging.getLogger(__name__)
 

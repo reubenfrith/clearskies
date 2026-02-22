@@ -4,9 +4,9 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.database import create_pool, close_pool
-from api.polling.scheduler import start_scheduler, shutdown_scheduler
-from api.routes import sites, holds, logs
+from database import create_pool, close_pool
+from polling.scheduler import start_scheduler, shutdown_scheduler
+from routes import sites, holds, logs
 
 logging.basicConfig(
     level=logging.INFO,

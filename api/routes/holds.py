@@ -4,7 +4,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel
 
-from api.database import get_pool, serialize_row, serialize_rows
+from database import get_pool, serialize_row, serialize_rows
 
 router = APIRouter()
 

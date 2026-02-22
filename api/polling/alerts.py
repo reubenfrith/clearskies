@@ -7,7 +7,7 @@ from typing import Optional
 
 from twilio.rest import Client
 
-from api.polling.thresholds import RULE_LABELS
+from polling.thresholds import RULE_LABELS
 
 logger = logging.getLogger(__name__)
 

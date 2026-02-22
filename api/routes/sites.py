@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 
-from api.database import get_pool, serialize_row, serialize_rows
+from database import get_pool, serialize_row, serialize_rows
 
 router = APIRouter()
 
