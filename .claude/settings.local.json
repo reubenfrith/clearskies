@@ -7,7 +7,10 @@
       "Bash(npm run build:*)",
       "Bash(ls:*)",
       "Bash(supabase db push:*)",
-      "Bash(npm run typecheck:*)"
+      "Bash(npm run typecheck:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
     ]
   }
 }
