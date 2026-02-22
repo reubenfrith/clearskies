@@ -3,6 +3,7 @@ import uuid
 from datetime import datetime
 
 import asyncpg
+from fastapi import Request
 
 
 async def create_pool() -> asyncpg.Pool:
@@ -14,7 +15,7 @@ async def close_pool(pool: asyncpg.Pool) -> None:
     await pool.close()
 
 
-def get_pool(request):
+def get_pool(request: Request):
     """FastAPI dependency — injects the pool from app.state."""
     return request.app.state.pool
 
