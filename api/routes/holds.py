@@ -1,7 +1,7 @@
 import json
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 
 from database import get_pool, serialize_row, serialize_rows
@@ -18,7 +18,6 @@ class CreateHoldRequest(BaseModel):
 
 @router.get("/holds/active")
 async def list_active_holds(
-    request: Request,
     site_id: Optional[str] = Query(None),
     pool=Depends(get_pool),
 ):
@@ -50,7 +49,6 @@ async def list_active_holds(
 
 @router.get("/holds")
 async def list_holds(
-    request: Request,
     page: int = Query(0, ge=0),
     page_size: int = Query(25, ge=1, le=100),
     pool=Depends(get_pool),
@@ -75,7 +73,7 @@ async def list_holds(
 
 
 @router.post("/holds", status_code=201)
-async def create_hold(body: CreateHoldRequest, request: Request, pool=Depends(get_pool)):
+async def create_hold(body: CreateHoldRequest, pool=Depends(get_pool)):
     """Create a manual hold for a site."""
     async with pool.acquire() as conn:
         # Verify the site exists
@@ -103,7 +101,7 @@ async def create_hold(body: CreateHoldRequest, request: Request, pool=Depends(ge
 
 
 @router.patch("/holds/{hold_id}/clear")
-async def clear_hold(hold_id: str, request: Request, pool=Depends(get_pool)):
+async def clear_hold(hold_id: str, pool=Depends(get_pool)):
     """Issue an all-clear for a hold (sets all_clear_at = now())."""
     async with pool.acquire() as conn:
         row = await conn.fetchrow(

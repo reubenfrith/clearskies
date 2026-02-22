@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException
 
 from database import get_pool, serialize_row, serialize_rows
 
@@ -6,7 +6,7 @@ router = APIRouter()
 
 
 @router.get("/sites")
-async def list_sites(request: Request, pool=Depends(get_pool)):
+async def list_sites(pool=Depends(get_pool)):
     """Return all active sites ordered by name."""
     async with pool.acquire() as conn:
         rows = await conn.fetch(
@@ -16,7 +16,7 @@ async def list_sites(request: Request, pool=Depends(get_pool)):
 
 
 @router.get("/sites/{site_id}")
-async def get_site(site_id: str, request: Request, pool=Depends(get_pool)):
+async def get_site(site_id: str, pool=Depends(get_pool)):
     """Return a single site by ID."""
     async with pool.acquire() as conn:
         row = await conn.fetchrow(

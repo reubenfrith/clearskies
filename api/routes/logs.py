@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Query
 
 from database import get_pool, serialize_rows
 
@@ -7,7 +7,6 @@ router = APIRouter()
 
 @router.get("/logs")
 async def list_logs(
-    request: Request,
     page: int = Query(0, ge=0),
     page_size: int = Query(50, ge=1, le=200),
     pool=Depends(get_pool),
