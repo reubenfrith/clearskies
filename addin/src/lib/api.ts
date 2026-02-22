@@ -1,18 +1,40 @@
 import type { Site, HoldRecord, NotificationRecord } from "./types.js";
+import type { GeotabSession } from "../geotab.js";
 
 const API_URL =
   (import.meta.env.VITE_API_URL as string | undefined) ?? "http://localhost:8000";
 const API_KEY =
   (import.meta.env.VITE_API_KEY as string | undefined) ?? "";
 
+let _session: GeotabSession | null = null;
+
+export function setGeotabSession(session: GeotabSession) {
+  _session = session;
+}
+
 async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
+  const sessionHeaders = _session
+    ? {
+        "X-Geotab-User": _session.userName,
+        "X-Geotab-Session": _session.sessionId,
+        "X-Geotab-Database": _session.database,
+      }
+    : {};
+
   const res = await fetch(`${API_URL}${path}`, {
-    headers: { "Content-Type": "application/json", "X-Api-Key": API_KEY },
+    headers: { "Content-Type": "application/json", "X-Api-Key": API_KEY, ...sessionHeaders },
     ...options,
   });
+
+  if (res.status === 401) {
+    alert("Your session has expired. Please reload the page.");
+    throw new Error("Session expired");
+  }
+
   if (!res.ok) {
     throw new Error(`API ${res.status}: ${await res.text()}`);
   }
+
   return res.json() as Promise<T>;
 }
 

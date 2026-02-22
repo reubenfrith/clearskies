@@ -1,15 +1,19 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from "react";
-import type { GeotabApi } from "../geotab.js";
+import type { GeotabApi, GeotabSession } from "../geotab.js";
+import { setGeotabSession } from "./api.js";
 
 interface GeotabContextValue {
   apiRef: React.MutableRefObject<GeotabApi | null>;
   /** Flips to true when MyGeotab calls initialize() and passes the API. */
   apiReady: boolean;
+  /** Geotab session credentials, available after getSession() resolves. */
+  session: GeotabSession | null;
 }
 
 const GeotabContext = createContext<GeotabContextValue>({
   apiRef: { current: null },
   apiReady: false,
+  session: null,
 });
 
 // _pendingApi holds the API even if initialize() fired before GeotabProvider mounted.
@@ -27,13 +31,13 @@ export function setGeotabApi(api: GeotabApi) {
 export function GeotabProvider({ children }: { children: React.ReactNode }) {
   const ref = useRef<GeotabApi | null>(null);
   const [apiReady, setApiReady] = useState(false);
+  const [session, setSession] = useState<GeotabSession | null>(null);
 
   // Set module-level handles during render so they're available ASAP
   _apiRef = ref;
   _setApiReady = setApiReady;
 
   // Catch the race: initialize() fired before this component mounted.
-  // _pendingApi will already be set; apply it now.
   useEffect(() => {
     if (_pendingApi && !apiReady) {
       ref.current = _pendingApi;
@@ -41,8 +45,17 @@ export function GeotabProvider({ children }: { children: React.ReactNode }) {
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Once the Geotab API is ready, fetch session credentials.
+  useEffect(() => {
+    if (!apiReady || !ref.current) return;
+    ref.current.getSession((s) => {
+      setSession(s);
+      setGeotabSession(s);
+    });
+  }, [apiReady]);
+
   return (
-    <GeotabContext.Provider value={{ apiRef: ref, apiReady }}>
+    <GeotabContext.Provider value={{ apiRef: ref, apiReady, session }}>
       {children}
     </GeotabContext.Provider>
   );

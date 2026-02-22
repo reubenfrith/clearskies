@@ -1,6 +1,12 @@
 // Type declarations for the MyGeotab Add-In JavaScript API
 // Injected by the MyGeotab framework at runtime.
 
+export interface GeotabSession {
+  userName: string;
+  sessionId: string;
+  database: string;
+}
+
 export interface GeotabApi {
   /** Make an authenticated call to the Geotab API */
   call(
@@ -9,6 +15,9 @@ export interface GeotabApi {
     success: (result: unknown) => void,
     error: (err: unknown) => void
   ): void;
+
+  /** Retrieve the current MyGeotab session credentials */
+  getSession(callback: (session: GeotabSession) => void): void;
 }
 
 export interface GeotabState {

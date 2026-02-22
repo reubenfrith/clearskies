@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from auth import verify_api_key
+from auth.dependencies import get_current_user
 from database import create_pool, close_pool
 from polling.scheduler import start_scheduler, shutdown_scheduler
 from routes import sites, holds, logs
@@ -39,11 +39,12 @@ app.add_middleware(
         "http://localhost:3000",
         "http://localhost:4173",
     ],
-    allow_methods=["GET", "POST", "PATCH", "OPTIONS"],
-    allow_headers=["Content-Type", "X-Api-Key"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
-_auth = [Depends(verify_api_key)]
+_auth = [Depends(get_current_user)]
 app.include_router(sites.router, prefix="/api", dependencies=_auth)
 app.include_router(holds.router, prefix="/api", dependencies=_auth)
 app.include_router(logs.router, prefix="/api", dependencies=_auth)
