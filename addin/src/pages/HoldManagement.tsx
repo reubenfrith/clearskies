@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { supabase } from "../lib/supabase.js";
+import { api } from "../lib/api.js";
 import type { Site, HoldRecord } from "../lib/types.js";
 import { WeatherBadge } from "../components/WeatherBadge.js";
 import { CountdownTimer } from "../components/CountdownTimer.js";
@@ -26,24 +26,13 @@ export function HoldManagement() {
   const load = useCallback(async () => {
     if (!siteId) return;
     try {
-      const [{ data: siteData, error: siteErr }, { data: holdData, error: holdErr }] =
-        await Promise.all([
-          supabase.from("sites").select("*").eq("id", siteId).single(),
-          supabase
-            .from("holds_log")
-            .select("*")
-            .eq("site_id", siteId)
-            .is("all_clear_at", null)
-            .order("triggered_at", { ascending: false })
-            .limit(1)
-            .maybeSingle(),
-        ]);
+      const [siteData, activeHolds] = await Promise.all([
+        api.getSite(siteId),
+        api.getActiveHolds(siteId),
+      ]);
 
-      if (siteErr) throw new Error(siteErr.message);
-      if (holdErr) throw new Error(holdErr.message);
-
-      setSite(siteData as Site);
-      setHold(holdData as HoldRecord | null);
+      setSite(siteData);
+      setHold(activeHolds[0] ?? null);
       setError(null);
     } catch (err) {
       setError(String(err));
@@ -65,11 +54,7 @@ export function HoldManagement() {
 
     setClearing(true);
     try {
-      const { error: updateErr } = await supabase
-        .from("holds_log")
-        .update({ all_clear_at: new Date().toISOString(), issued_by: "manual-dashboard" })
-        .eq("id", hold.id);
-      if (updateErr) throw new Error(updateErr.message);
+      await api.clearHold(hold.id);
       await load();
     } catch (err) {
       setError(String(err));

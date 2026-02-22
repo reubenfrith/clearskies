@@ -1,11 +1,12 @@
--- ClearSkies — Supabase schema
--- Run this in the Supabase SQL editor (or via supabase db push).
+-- ClearSkies — PostgreSQL schema for Railway
+-- Run via: psql $DATABASE_URL -f api/schema.sql
+-- Or paste into Railway's PostgreSQL query console.
 
 -- ─── Extensions ───────────────────────────────────────────────────────────────
 create extension if not exists "uuid-ossp";
 
 -- ─── sites ────────────────────────────────────────────────────────────────────
--- One row per job site. Manually populated via Supabase dashboard or seed script.
+-- One row per job site. Populated via seed script or manual insert.
 create table if not exists sites (
   id               uuid primary key default gen_random_uuid(),
   name             text not null,
@@ -25,10 +26,10 @@ comment on column sites.geotab_zone_id is 'Zone ID from MyGeotab → Administrat
 create table if not exists holds_log (
   id                 uuid primary key default gen_random_uuid(),
   site_id            uuid not null references sites(id) on delete cascade,
-  triggered_at       timestamptz not null,
+  triggered_at       timestamptz not null default now(),
   trigger_rule       text not null,           -- OshaRule enum value
-  weather_snapshot   jsonb not null,          -- WeatherSnapshot at time of breach
-  vehicles_on_site   jsonb not null,          -- VehicleOnSite[] confirmed on site
+  weather_snapshot   jsonb not null default '{}',  -- WeatherSnapshot at time of breach
+  vehicles_on_site   jsonb not null default '[]',  -- VehicleOnSite[] confirmed on site
   hold_duration_mins int,                     -- null = hold until condition clears
   all_clear_at       timestamptz,             -- null = hold still active
   issued_by          text not null default 'auto', -- 'auto' | user email for manual holds
@@ -63,35 +64,9 @@ comment on table notification_log is 'Record of every SMS dispatched by ClearSki
 
 create index if not exists notification_log_hold_idx on notification_log (hold_id);
 
--- ─── Row-Level Security ───────────────────────────────────────────────────────
--- The agent uses the service role key (bypasses RLS).
--- The add-in frontend uses the anon key — read-only access to all tables,
--- write access to holds_log for manual holds/all-clears issued from the UI.
-
-alter table sites enable row level security;
-alter table holds_log enable row level security;
-alter table notification_log enable row level security;
-
--- Public read (the add-in is embedded inside MyGeotab, auth handled by Geotab)
-create policy "anon_read_sites" on sites
-  for select using (true);
-
-create policy "anon_read_holds" on holds_log
-  for select using (true);
-
-create policy "anon_read_notifications" on notification_log
-  for select using (true);
-
--- Add-in can insert/update holds (manual holds & all-clears from the dashboard)
-create policy "anon_insert_holds" on holds_log
-  for insert with check (true);
-
-create policy "anon_update_holds" on holds_log
-  for update using (true);
-
 -- ─── Seed: example sites (replace with real zone IDs) ────────────────────────
--- Uncomment and edit before running in your Supabase project.
+-- Uncomment and edit before running against your Railway PostgreSQL instance.
 -- insert into sites (name, address, lat, lng, geotab_zone_id) values
---   ('Site A — Downtown Tower',  '123 Main St, Chicago, IL',   41.8781, -87.6298, 'zABCDE12345'),
---   ('Site B — Riverside Bridge', '456 River Rd, Chicago, IL', 41.8827, -87.6233, 'zFGHIJ67890'),
---   ('Site C — North Suburb',    '789 Oak Ave, Evanston, IL',  42.0451, -87.6877, 'zKLMNO11111');
+--   ('Site A — Downtown Tower',   '123 Main St, Chicago, IL',   41.8781, -87.6298, 'zABCDE12345'),
+--   ('Site B — Riverside Bridge', '456 River Rd, Chicago, IL',  41.8827, -87.6233, 'zFGHIJ67890'),
+--   ('Site C — North Suburb',     '789 Oak Ave, Evanston, IL',  42.0451, -87.6877, 'zKLMNO11111');

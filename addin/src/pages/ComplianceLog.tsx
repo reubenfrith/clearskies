@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { supabase } from "../lib/supabase.js";
-import type { HoldRecord, Site } from "../lib/types.js";
+import { api } from "../lib/api.js";
+import type { HoldRecord } from "../lib/types.js";
 
 const RULE_LABELS: Record<string, string> = {
   LIGHTNING_30_30: "Lightning (30/30)",
@@ -11,8 +11,10 @@ const RULE_LABELS: Record<string, string> = {
 
 const PAGE_SIZE = 25;
 
+type HoldWithSite = HoldRecord & { site_name: string };
+
 export function ComplianceLog() {
-  const [holds, setHolds] = useState<(HoldRecord & { site_name: string })[]>([]);
+  const [holds, setHolds] = useState<HoldWithSite[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(0);
@@ -22,34 +24,9 @@ export function ComplianceLog() {
     async function load() {
       setLoading(true);
       try {
-        const from = page * PAGE_SIZE;
-        const to = from + PAGE_SIZE - 1;
-
-        const [{ data: holdsData, error: holdsErr, count }, { data: sitesData, error: sitesErr }] =
-          await Promise.all([
-            supabase
-              .from("holds_log")
-              .select("*", { count: "exact" })
-              .order("triggered_at", { ascending: false })
-              .range(from, to),
-            supabase.from("sites").select("id, name"),
-          ]);
-
-        if (holdsErr) throw new Error(holdsErr.message);
-        if (sitesErr) throw new Error(sitesErr.message);
-
-        const siteMap = new Map<string, string>();
-        for (const s of (sitesData ?? []) as Site[]) {
-          siteMap.set(s.id, s.name);
-        }
-
-        const enriched = (holdsData as HoldRecord[]).map((h) => ({
-          ...h,
-          site_name: siteMap.get(h.site_id) ?? "Unknown site",
-        }));
-
-        setHolds(enriched);
-        setTotalCount(count ?? 0);
+        const { items, total } = await api.getHolds(page, PAGE_SIZE);
+        setHolds(items as HoldWithSite[]);
+        setTotalCount(total);
         setError(null);
       } catch (err) {
         setError(String(err));

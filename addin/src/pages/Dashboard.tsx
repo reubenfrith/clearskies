@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { supabase } from "../lib/supabase.js";
+import { api } from "../lib/api.js";
 import type { Site, HoldRecord, SiteWithStatus } from "../lib/types.js";
 import { SiteCard } from "../components/SiteCard.js";
 
@@ -18,22 +18,17 @@ export function Dashboard() {
 
   const load = useCallback(async () => {
     try {
-      // Fetch sites + their active holds in parallel
-      const [{ data: sitesData, error: sitesErr }, { data: holdsData, error: holdsErr }] =
-        await Promise.all([
-          supabase.from("sites").select("*").eq("active", true).order("name"),
-          supabase.from("holds_log").select("*").is("all_clear_at", null),
-        ]);
-
-      if (sitesErr) throw new Error(sitesErr.message);
-      if (holdsErr) throw new Error(holdsErr.message);
+      const [sitesData, holdsData] = await Promise.all([
+        api.getSites(),
+        api.getActiveHolds(),
+      ]);
 
       const holdsBySite = new Map<string, HoldRecord>();
-      for (const h of (holdsData ?? []) as HoldRecord[]) {
+      for (const h of holdsData) {
         holdsBySite.set(h.site_id, h);
       }
 
-      const withStatus: SiteWithStatus[] = (sitesData as Site[]).map((s) => {
+      const withStatus: SiteWithStatus[] = sitesData.map((s) => {
         const hold = holdsBySite.get(s.id) ?? null;
         return {
           ...s,
@@ -103,7 +98,7 @@ export function Dashboard() {
       {/* Site cards */}
       {!loading && sites.length === 0 && (
         <p className="text-sm text-gray-500 italic">
-          No active sites found. Add sites to the <code>sites</code> table in Supabase.
+          No active sites found. Add sites to the <code>sites</code> table in the database.
         </p>
       )}
 

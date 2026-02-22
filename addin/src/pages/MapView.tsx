@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
-import { supabase } from "../lib/supabase.js";
+import { api } from "../lib/api.js";
 import { useGeotabApi } from "../lib/geotabContext.js";
 import type { Site, HoldRecord, SiteWithStatus, VehicleOnSite } from "../lib/types.js";
 
@@ -132,21 +132,17 @@ export function MapView() {
 
   const load = useCallback(async () => {
     try {
-      const [{ data: sitesData, error: sitesErr }, { data: holdsData, error: holdsErr }] =
-        await Promise.all([
-          supabase.from("sites").select("*").eq("active", true).order("name"),
-          supabase.from("holds_log").select("*").is("all_clear_at", null),
-        ]);
-
-      if (sitesErr) throw new Error(sitesErr.message);
-      if (holdsErr) throw new Error(holdsErr.message);
+      const [sitesData, holdsData] = await Promise.all([
+        api.getSites(),
+        api.getActiveHolds(),
+      ]);
 
       const holdsBySite = new Map<string, HoldRecord>();
-      for (const h of (holdsData ?? []) as HoldRecord[]) {
+      for (const h of holdsData) {
         holdsBySite.set(h.site_id, h);
       }
 
-      const withStatus: SiteWithStatus[] = (sitesData as Site[]).map((s) => {
+      const withStatus: SiteWithStatus[] = sitesData.map((s) => {
         const hold = holdsBySite.get(s.id) ?? null;
         return {
           ...s,
@@ -162,17 +158,17 @@ export function MapView() {
 
       // Track which device IDs are on an active-hold site (for colour-coding)
       const holdDeviceIds = new Set<string>(
-        (holdsData as HoldRecord[]).flatMap(
+        holdsData.flatMap(
           (h) => (h.vehicles_on_site ?? []).map((v) => v.device_id)
         )
       );
       setOnHoldDeviceIds(holdDeviceIds);
 
       // Fetch live positions from Geotab API (all fleet vehicles)
-      const api = apiRef.current;
-      if (api) {
+      const geotabApi = apiRef.current;
+      if (geotabApi) {
         setLiveAvailable(true);
-        const positions = await fetchAllDeviceStatuses(api);
+        const positions = await fetchAllDeviceStatuses(geotabApi);
         const posMap = new Map<string, LivePosition>();
         for (const p of positions) {
           if (p.lat !== 0 || p.lng !== 0) posMap.set(p.deviceId, p);
