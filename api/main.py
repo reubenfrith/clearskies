@@ -56,3 +56,10 @@ app.include_router(logs.router, prefix="/api", dependencies=_auth)
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
+
+@app.get("/debug-key")
+async def debug_key():
+    import os
+    key = os.environ.get("API_KEY", "")
+    return {"len": len(key), "repr": repr(key[:6])}
