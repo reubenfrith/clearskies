@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../lib/api.js";
 import type { HoldRecord } from "../lib/types.js";
+import { useGeotabApi } from "../lib/geotabContext.js";
 
 const RULE_LABELS: Record<string, string> = {
   LIGHTNING_30_30: "Lightning (30/30)",
@@ -14,6 +15,7 @@ const PAGE_SIZE = 25;
 type HoldWithSite = HoldRecord & { site_name: string };
 
 export function ComplianceLog() {
+  const { session } = useGeotabApi();
   const [holds, setHolds] = useState<HoldWithSite[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -21,6 +23,7 @@ export function ComplianceLog() {
   const [totalCount, setTotalCount] = useState(0);
 
   useEffect(() => {
+    if (!session) return;
     async function load() {
       setLoading(true);
       try {
@@ -35,7 +38,7 @@ export function ComplianceLog() {
       }
     }
     load();
-  }, [page]);
+  }, [page, session]);
 
   function durationLabel(hold: HoldRecord): string {
     if (!hold.all_clear_at) return "Active";

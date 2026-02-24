@@ -5,6 +5,7 @@ import type { Site, HoldRecord } from "../lib/types.js";
 import { WeatherBadge } from "../components/WeatherBadge.js";
 import { CountdownTimer } from "../components/CountdownTimer.js";
 import { VehicleList } from "../components/VehicleList.js";
+import { useGeotabApi } from "../lib/geotabContext.js";
 
 const RULE_LABELS: Record<string, string> = {
   LIGHTNING_30_30: "Lightning / Thunderstorm (OSHA 30/30 Rule)",
@@ -14,6 +15,7 @@ const RULE_LABELS: Record<string, string> = {
 };
 
 export function HoldManagement() {
+  const { session } = useGeotabApi();
   const { siteId } = useParams<{ siteId: string }>();
   const navigate = useNavigate();
 
@@ -42,8 +44,9 @@ export function HoldManagement() {
   }, [siteId]);
 
   useEffect(() => {
+    if (!session) return;
     load();
-  }, [load]);
+  }, [load, session]);
 
   async function handleManualAllClear() {
     if (!hold) return;

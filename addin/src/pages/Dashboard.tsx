@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { api } from "../lib/api.js";
 import type { HoldRecord, SiteWithStatus } from "../lib/types.js";
 import { SiteCard } from "../components/SiteCard.js";
+import { useGeotabApi } from "../lib/geotabContext.js";
 
 const REFRESH_INTERVAL_MS = 30_000;
 
@@ -11,6 +12,7 @@ function deriveSiteStatus(hold: HoldRecord | null): SiteWithStatus["status"] {
 }
 
 export function Dashboard() {
+  const { session } = useGeotabApi();
   const [sites, setSites] = useState<SiteWithStatus[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -49,10 +51,11 @@ export function Dashboard() {
   }, []);
 
   useEffect(() => {
+    if (!session) return;
     load();
     const id = setInterval(load, REFRESH_INTERVAL_MS);
     return () => clearInterval(id);
-  }, [load]);
+  }, [load, session]);
 
   const redCount = sites.filter((s) => s.status === "red").length;
   const greenCount = sites.filter((s) => s.status === "green").length;
