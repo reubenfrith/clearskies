@@ -32,7 +32,10 @@ async def verify_geotab_session(username: str, session_id: str, database: str) -
             timeout=10,
         )
 
-    data = response.json()
+    try:
+        data = response.json()
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid Geotab session")
     if "error" in data:
         raise HTTPException(status_code=401, detail="Invalid Geotab session")
 
