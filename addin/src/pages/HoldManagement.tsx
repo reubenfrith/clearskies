@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { Button, ButtonType, Card } from "@geotab/zenith";
 import { api } from "../lib/api.js";
 import type { Site, HoldRecord } from "../lib/types.js";
 import { WeatherBadge } from "../components/WeatherBadge.js";
@@ -72,7 +73,7 @@ export function HoldManagement() {
     return (
       <div className="p-4">
         <p className="text-sm text-red-600">Site not found.</p>
-        <button onClick={() => navigate("/")} className="mt-2 text-xs text-geotab-blue hover:underline">
+        <button onClick={() => navigate("/")} className="zen-link mt-2 text-xs">
           ← Back to dashboard
         </button>
       </div>
@@ -82,7 +83,7 @@ export function HoldManagement() {
   return (
     <div className="p-4 space-y-6 max-w-3xl">
       {/* Back nav */}
-      <button onClick={() => navigate("/")} className="text-xs text-geotab-blue hover:underline">
+      <button onClick={() => navigate("/")} className="zen-link text-xs">
         ← Dashboard
       </button>
 
@@ -143,33 +144,33 @@ export function HoldManagement() {
           </div>
 
           {/* Weather snapshot */}
-          <div className="bg-white border border-gray-200 rounded-lg p-4">
-            <h3 className="text-sm font-semibold text-gray-700 mb-3">Weather at time of hold</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <Stat label="Wind Speed" value={`${hold.weather_snapshot.wind_speed_mph} mph`} />
-              <Stat label="Wind Gust" value={`${hold.weather_snapshot.wind_gust_mph} mph`} />
-              <Stat label="Lightning" value={`${hold.weather_snapshot.lightning_probability_pct}%`} />
-              <Stat label="Apparent Temp" value={`${hold.weather_snapshot.apparent_temp_c}°C`} />
-            </div>
-          </div>
+          <Card title="Weather at time of hold" fullWidth>
+            <Card.Content>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <Stat label="Wind Speed" value={`${hold.weather_snapshot.wind_speed_mph} mph`} />
+                <Stat label="Wind Gust" value={`${hold.weather_snapshot.wind_gust_mph} mph`} />
+                <Stat label="Lightning" value={`${hold.weather_snapshot.lightning_probability_pct}%`} />
+                <Stat label="Apparent Temp" value={`${hold.weather_snapshot.apparent_temp_c}°C`} />
+              </div>
+            </Card.Content>
+          </Card>
 
           {/* Vehicles on site */}
-          <div className="bg-white border border-gray-200 rounded-lg p-4">
-            <h3 className="text-sm font-semibold text-gray-700 mb-3">
-              Vehicles confirmed on site ({hold.vehicles_on_site.length})
-            </h3>
-            <VehicleList vehicles={hold.vehicles_on_site} />
-          </div>
+          <Card title={`Vehicles confirmed on site (${hold.vehicles_on_site.length})`} fullWidth>
+            <Card.Content>
+              <VehicleList vehicles={hold.vehicles_on_site} />
+            </Card.Content>
+          </Card>
 
           {/* Manual all-clear */}
           <div className="flex justify-end">
-            <button
+            <Button
+              type={ButtonType.Primary}
               onClick={handleManualAllClear}
               disabled={clearing}
-              className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white text-sm font-semibold rounded-lg transition-colors"
             >
               {clearing ? "Issuing all-clear…" : "Issue Manual All-Clear"}
-            </button>
+            </Button>
           </div>
         </div>
       )}

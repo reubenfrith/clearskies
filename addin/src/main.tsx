@@ -1,6 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { MemoryRouter } from "react-router-dom";
+import { UserFormatProvider } from "@geotab/zenith";
 import { App } from "./App.js";
 import "./index.css";
 import "leaflet/dist/leaflet.css";
@@ -12,13 +13,15 @@ import { PasswordGate } from "./components/PasswordGate.js";
 const container = document.getElementById("root");
 if (container) ReactDOM.createRoot(container).render(
       <React.StrictMode>
-        <PasswordGate>
-          <GeotabProvider>
-            <MemoryRouter>
-              <App />
-            </MemoryRouter>
-          </GeotabProvider>
-        </PasswordGate>
+        <UserFormatProvider dateFormat="dd MMMM yyyy" timeFormat="hh:mm" weekStartsOnSunday={false}>
+          <PasswordGate>
+            <GeotabProvider>
+              <MemoryRouter>
+                <App />
+              </MemoryRouter>
+            </GeotabProvider>
+          </PasswordGate>
+        </UserFormatProvider>
       </React.StrictMode>
   );
 

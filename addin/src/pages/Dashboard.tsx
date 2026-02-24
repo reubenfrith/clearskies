@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { Button, ButtonType } from "@geotab/zenith";
 import { api } from "../lib/api.js";
 import type { HoldRecord, SiteWithStatus } from "../lib/types.js";
 import { SiteCard } from "../components/SiteCard.js";
@@ -74,12 +75,9 @@ export function Dashboard() {
           </p>
         </div>
         <div className="text-right">
-          <button
-            onClick={load}
-            className="text-xs text-geotab-blue hover:underline"
-          >
+          <Button type={ButtonType.Tertiary} onClick={load}>
             Refresh
-          </button>
+          </Button>
           <p className="text-xs text-gray-400 mt-0.5">
             Updated {lastRefresh.toLocaleTimeString()}
           </p>

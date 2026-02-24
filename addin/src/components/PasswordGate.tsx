@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Button, ButtonType, TextInput } from "@geotab/zenith";
 
 const APP_PASSWORD =
   (import.meta.env.VITE_APP_PASSWORD as string | undefined) ?? "";
@@ -38,23 +39,17 @@ export function PasswordGate({ children }: { children: React.ReactNode }) {
           <p className="text-sm text-gray-500 mt-1">Enter the access password to continue</p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <input
+          <TextInput
             type="password"
             value={input}
             onChange={(e) => { setInput(e.target.value); setError(false); }}
             placeholder="Password"
             autoFocus
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            error={error ? "Incorrect password. Try again." : undefined}
           />
-          {error && (
-            <p className="text-xs text-red-600">Incorrect password. Try again.</p>
-          )}
-          <button
-            type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg py-2 transition-colors"
-          >
+          <Button htmlType="submit" type={ButtonType.Primary}>
             Enter
-          </button>
+          </Button>
         </form>
       </div>
     </div>

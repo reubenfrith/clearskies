@@ -63,7 +63,7 @@ export function SiteCard({ site }: Props) {
       {/* Link to hold management */}
       <Link
         to={`/holds/${site.id}`}
-        className="text-xs text-geotab-blue hover:underline mt-auto"
+        className="zen-link mt-auto"
       >
         {activeHold ? "Manage hold →" : "View site →"}
       </Link>

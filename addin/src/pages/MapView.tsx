@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, Polygon, Tooltip } from "react-leaflet";
 import L from "leaflet";
+import { Button, ButtonType } from "@geotab/zenith";
 import { api } from "../lib/api.js";
 import { useGeotabApi } from "../lib/geotabContext.js";
 import type { Site, HoldRecord, SiteWithStatus, VehicleOnSite } from "../lib/types.js";
@@ -32,6 +33,13 @@ const VEH_HOLD_ICON = makeDotIcon("#f97316", 16);  // orange — vehicle on acti
 // DeviceStatusInfo requires deviceSearch.deviceIds (plural) to return results.
 // Step 1: fetch all Device objects to collect IDs.
 // Step 2: query DeviceStatusInfo with those IDs.
+
+interface ZonePolygon {
+  siteId: string;
+  positions: [number, number][];
+  status: "red" | "green";
+  name: string;
+}
 
 interface LivePosition {
   deviceId: string;
@@ -74,6 +82,28 @@ async function fetchAllDeviceStatuses(
       isDeviceCommunicating: r.isDeviceCommunicating ?? false,
     };
   });
+}
+
+async function fetchZonePolygons(
+  geotabApi: { call: Function },
+  sites: SiteWithStatus[]
+): Promise<ZonePolygon[]> {
+  const results = await Promise.all(
+    sites
+      .filter((s) => s.geotab_zone_id)
+      .map(async (s) => {
+        const zones = await geotabGet<{ points: { x: number; y: number }[] }>(
+          geotabApi,
+          "Zone",
+          { id: s.geotab_zone_id }
+        );
+        const zone = zones[0];
+        if (!zone?.points?.length) return null;
+        const positions: [number, number][] = zone.points.map((p) => [p.y, p.x]);
+        return { siteId: s.id, positions, status: s.status, name: s.name } as ZonePolygon;
+      })
+  );
+  return results.filter((z): z is ZonePolygon => z !== null);
 }
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
@@ -129,6 +159,7 @@ export function MapView() {
   const [error, setError] = useState<string | null>(null);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
   const [liveAvailable, setLiveAvailable] = useState(false);
+  const [zones, setZones] = useState<ZonePolygon[]>([]);
 
   const load = useCallback(async () => {
     try {
@@ -174,6 +205,8 @@ export function MapView() {
           if (p.lat !== 0 || p.lng !== 0) posMap.set(p.deviceId, p);
         }
         setLivePositions(posMap);
+        const zonePolygons = await fetchZonePolygons(geotabApi, withStatus);
+        setZones(zonePolygons);
       } else {
         setLiveAvailable(false);
         setLivePositions(new Map());
@@ -205,12 +238,9 @@ export function MapView() {
 
       {/* Refresh button */}
       <div className="absolute top-3 right-3 z-[1000] flex flex-col items-end gap-1">
-        <button
-          onClick={load}
-          className="bg-white border border-gray-200 shadow text-xs text-geotab-blue hover:bg-gray-50 px-3 py-1.5 rounded"
-        >
+        <Button type={ButtonType.Tertiary} onClick={load}>
           Refresh
-        </button>
+        </Button>
         <span className="text-xs text-gray-500 bg-white/80 px-2 py-0.5 rounded">
           {lastRefresh.toLocaleTimeString()}
         </span>
@@ -241,6 +271,22 @@ export function MapView() {
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
+
+        {/* Zone polygons */}
+        {zones.map((z) => (
+          <Polygon
+            key={z.siteId}
+            positions={z.positions}
+            pathOptions={{
+              color: z.status === "red" ? "#ef4444" : "#22c55e",
+              fillColor: z.status === "red" ? "#ef4444" : "#22c55e",
+              fillOpacity: 0.15,
+              weight: 2,
+            }}
+          >
+            <Tooltip sticky>{z.name}</Tooltip>
+          </Polygon>
+        ))}
 
         {/* Site markers */}
         {sites.map((site) => (
