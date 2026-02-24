@@ -3,8 +3,6 @@ import type { GeotabSession } from "../geotab.js";
 
 const API_URL =
   (import.meta.env.VITE_API_URL as string | undefined) ?? "http://localhost:8000";
-const API_KEY =
-  (import.meta.env.VITE_API_KEY as string | undefined) ?? "";
 
 let _session: GeotabSession | null = null;
 
@@ -22,7 +20,7 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
     : {};
 
   const res = await fetch(`${API_URL}${path}`, {
-    headers: { "Content-Type": "application/json", "X-Api-Key": API_KEY, ...sessionHeaders } as HeadersInit,
+    headers: { "Content-Type": "application/json", ...sessionHeaders } as HeadersInit,
     ...options,
   });
 

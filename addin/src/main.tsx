@@ -5,17 +5,20 @@ import { App } from "./App.js";
 import "./index.css";
 import "leaflet/dist/leaflet.css";
 import { GeotabProvider, setGeotabApi } from "./lib/geotabContext.js";
+import { PasswordGate } from "./components/PasswordGate.js";
 
 // Mount React immediately — works on GitHub Pages, local dev, and inside MyGeotab.
 // MyGeotab loads our index.html as an iframe src, so document and #root are always present.
 const container = document.getElementById("root");
 if (container) ReactDOM.createRoot(container).render(
       <React.StrictMode>
-        <GeotabProvider>
-          <MemoryRouter>
-            <App />
-          </MemoryRouter>
-        </GeotabProvider>
+        <PasswordGate>
+          <GeotabProvider>
+            <MemoryRouter>
+              <App />
+            </MemoryRouter>
+          </GeotabProvider>
+        </PasswordGate>
       </React.StrictMode>
   );
 
