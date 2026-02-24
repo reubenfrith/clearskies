@@ -4,7 +4,15 @@ import L from "leaflet";
 import { Button, ButtonType } from "@geotab/zenith";
 import { api } from "../lib/api.js";
 import { useGeotabApi } from "../lib/geotabContext.js";
-import type { Site, HoldRecord, SiteWithStatus, VehicleOnSite } from "../lib/types.js";
+import { fetchAllZones } from "../lib/geotabZones.js";
+import type {
+  Site,
+  HoldRecord,
+  SiteStatus,
+  SiteWithStatus,
+  VehicleOnSite,
+  GeotabZone,
+} from "../lib/types.js";
 
 // ─── Custom div icons ──────────────────────────────────────────────────────────
 
@@ -34,11 +42,14 @@ const VEH_HOLD_ICON = makeDotIcon("#f97316", 16);  // orange — vehicle on acti
 // Step 1: fetch all Device objects to collect IDs.
 // Step 2: query DeviceStatusInfo with those IDs.
 
-interface ZonePolygon {
-  siteId: string;
-  positions: [number, number][];
-  status: "red" | "green";
+interface ZoneFeature {
+  id: string;
   name: string;
+  coordinates: [number, number][];
+  status: SiteStatus;
+  siteId?: string;
+  siteName?: string;
+  zoneType?: string | null;
 }
 
 interface LivePosition {
@@ -84,26 +95,28 @@ async function fetchAllDeviceStatuses(
   });
 }
 
-async function fetchZonePolygons(
-  geotabApi: { call: Function },
-  sites: SiteWithStatus[]
-): Promise<ZonePolygon[]> {
-  const results = await Promise.all(
+function buildZoneFeatures(zones: GeotabZone[], sites: SiteWithStatus[]): ZoneFeature[] {
+  const siteByZoneId = new Map<string, SiteWithStatus>(
     sites
-      .filter((s) => s.geotab_zone_id)
-      .map(async (s) => {
-        const zones = await geotabGet<{ points: { x: number; y: number }[] }>(
-          geotabApi,
-          "Zone",
-          { id: s.geotab_zone_id }
-        );
-        const zone = zones[0];
-        if (!zone?.points?.length) return null;
-        const positions: [number, number][] = zone.points.map((p) => [p.y, p.x]);
-        return { siteId: s.id, positions, status: s.status, name: s.name } as ZonePolygon;
-      })
+      .filter((site) => Boolean(site.geotab_zone_id))
+      .map((site) => [site.geotab_zone_id, site])
   );
-  return results.filter((z): z is ZonePolygon => z !== null);
+
+  return zones
+    .filter((zone) => zone.points?.length)
+    .map((zone) => {
+      const linkedSite = siteByZoneId.get(zone.id);
+      const coordinates: [number, number][] = zone.points.map((point) => [point.y, point.x]);
+      return {
+        id: zone.id,
+        name: zone.name || "Untitled zone",
+        coordinates,
+        status: linkedSite?.status ?? "green",
+        siteId: linkedSite?.id,
+        siteName: linkedSite?.name,
+        zoneType: zone.zoneType?.name ?? null,
+      };
+    });
 }
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
@@ -159,9 +172,11 @@ export function MapView() {
   const [error, setError] = useState<string | null>(null);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
   const [liveAvailable, setLiveAvailable] = useState(false);
-  const [zones, setZones] = useState<ZonePolygon[]>([]);
+  const [zones, setZones] = useState<ZoneFeature[]>([]);
+  const [zoneError, setZoneError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
+    setLoading(true);
     try {
       const [sitesData, holdsData] = await Promise.all([
         api.getSites(),
@@ -199,17 +214,35 @@ export function MapView() {
       const geotabApi = apiRef.current;
       if (geotabApi) {
         setLiveAvailable(true);
-        const positions = await fetchAllDeviceStatuses(geotabApi);
-        const posMap = new Map<string, LivePosition>();
-        for (const p of positions) {
-          if (p.lat !== 0 || p.lng !== 0) posMap.set(p.deviceId, p);
+        const [positionsResult, zonesResult] = await Promise.allSettled([
+          fetchAllDeviceStatuses(geotabApi),
+          fetchAllZones(geotabApi),
+        ]);
+
+        if (positionsResult.status === "fulfilled") {
+          const posMap = new Map<string, LivePosition>();
+          for (const p of positionsResult.value) {
+            if (p.lat !== 0 || p.lng !== 0) posMap.set(p.deviceId, p);
+          }
+          setLivePositions(posMap);
+        } else {
+          console.warn("[MapView] Failed to load live positions", positionsResult.reason);
+          setLivePositions(new Map());
         }
-        setLivePositions(posMap);
-        const zonePolygons = await fetchZonePolygons(geotabApi, withStatus);
-        setZones(zonePolygons);
+
+        if (zonesResult.status === "fulfilled") {
+          setZones(buildZoneFeatures(zonesResult.value, withStatus));
+          setZoneError(null);
+        } else {
+          console.warn("[MapView] Failed to load Geotab zones", zonesResult.reason);
+          setZones([]);
+          setZoneError("Unable to load Geotab zones");
+        }
       } else {
         setLiveAvailable(false);
         setLivePositions(new Map());
+        setZones([]);
+        setZoneError(null);
       }
     } catch (err) {
       setError(String(err));
@@ -253,6 +286,12 @@ export function MapView() {
         </div>
       )}
 
+      {zoneError && (
+        <div className="absolute top-16 left-3 z-[1000] bg-amber-50 border border-amber-200 text-amber-700 text-xs px-3 py-1.5 rounded shadow max-w-xs">
+          {zoneError}
+        </div>
+      )}
+
       {/* Loading overlay */}
       {loading && (
         <div className="absolute inset-0 z-[1000] flex items-center justify-center bg-white/60">
@@ -273,20 +312,32 @@ export function MapView() {
         />
 
         {/* Zone polygons */}
-        {zones.map((z) => (
-          <Polygon
-            key={z.siteId}
-            positions={z.positions}
-            pathOptions={{
-              color: z.status === "red" ? "#ef4444" : "#22c55e",
-              fillColor: z.status === "red" ? "#ef4444" : "#22c55e",
-              fillOpacity: 0.15,
-              weight: 2,
-            }}
-          >
-            <Tooltip sticky>{z.name}</Tooltip>
-          </Polygon>
-        ))}
+        {zones.map((zone) => {
+          const isHold = zone.status === "red";
+          const stroke = isHold ? "#ef4444" : "#22c55e";
+          return (
+            <Polygon
+              key={zone.id}
+              positions={zone.coordinates}
+              pathOptions={{
+                color: stroke,
+                fillColor: stroke,
+                fillOpacity: 0.15,
+                weight: zone.siteId ? 2 : 1,
+              }}
+            >
+              <Tooltip sticky>
+                <div className="text-xs space-y-0.5 min-w-[140px]">
+                  <p className="font-semibold">{zone.name}</p>
+                  {zone.zoneType && <p className="text-gray-500">{zone.zoneType}</p>}
+                  {zone.siteName && (
+                    <p className="text-gray-500">Linked site: {zone.siteName}</p>
+                  )}
+                </div>
+              </Tooltip>
+            </Polygon>
+          );
+        })}
 
         {/* Site markers */}
         {sites.map((site) => (

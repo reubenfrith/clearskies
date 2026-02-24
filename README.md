@@ -234,6 +234,8 @@ INSERT INTO sites (name, address, lat, lng, geotab_zone_id) VALUES
   ('Site A — Downtown Tower', '123 Main St, Chicago, IL', 41.8781, -87.6298, 'zABCDE12345');
 ```
 
+The add-in now renders **every** zone available to the signed-in MyGeotab user, coloring the zones that match `sites.geotab_zone_id`. Because those polygons come straight from the MyGeotab JavaScript API, they only appear when the add-in runs inside MyGeotab (the standalone Vite dev server intentionally skips them).
+
 ---
 
 ## Deployment

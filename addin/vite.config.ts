@@ -12,6 +12,17 @@ export default defineConfig({
   build: {
     outDir: "dist",
     sourcemap: true,
+    chunkSizeWarningLimit: 700,
+    rollupOptions: {
+      output: {
+        // Split large vendor deps so the main chunk stays under 500 kB.
+        manualChunks: {
+          react: ["react", "react-dom"],
+          leaflet: ["react-leaflet", "leaflet"],
+          geotab: ["@geotab/zenith"],
+        },
+      },
+    },
   },
   // Env prefix for Vite — VITE_* vars are exposed to the client bundle
   envPrefix: "VITE_",

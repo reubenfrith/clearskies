@@ -67,3 +67,33 @@ export interface SiteWithStatus extends Site {
   activeHold: HoldRecord | null;
   weather: WeatherSnapshot | null;
 }
+
+// ─── Geotab zones ────────────────────────────────────────────────────────────
+
+export interface GeotabEntityRef {
+  id: string;
+  name?: string;
+}
+
+export interface GeotabZonePoint {
+  x: number; // longitude in decimal degrees
+  y: number; // latitude in decimal degrees
+  z?: number;
+  radius?: number;
+  sequence?: number;
+}
+
+export interface GeotabZone {
+  id: string;
+  name: string;
+  active?: boolean;
+  color?: string;
+  comment?: string;
+  zoneType?: GeotabEntityRef | null;
+  groups?: GeotabEntityRef[];
+  points: GeotabZonePoint[];
+  version?: string;
+  externalReference?: string | null;
+  workTime?: number | null;
+  lastModified?: string;
+}
