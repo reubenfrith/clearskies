@@ -1,7 +1,7 @@
 import type { Site, HoldRecord, NotificationRecord } from "./types.js";
 import type { GeotabSession } from "../geotab.js";
 
-const API_URL =
+export const API_URL =
   (import.meta.env.VITE_API_URL as string | undefined) ?? "http://localhost:8000";
 
 let _session: GeotabSession | null = null;
