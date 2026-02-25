@@ -66,6 +66,12 @@ export const api = {
       body: JSON.stringify(data),
     }),
 
+  createSite: (data: { name: string; address?: string; lat: number; lng: number; geotab_zone_id: string }) =>
+    apiFetch<Site>("/api/sites", { method: "POST", body: JSON.stringify(data) }),
+
+  deactivateSite: (siteId: string) =>
+    apiFetch<void>(`/api/sites/${siteId}`, { method: "DELETE" }),
+
   clearHold: (holdId: string) =>
     apiFetch<HoldRecord>(`/api/holds/${holdId}/clear`, { method: "PATCH" }),
 

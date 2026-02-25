@@ -3,6 +3,7 @@ import { Button, ButtonType } from "@geotab/zenith";
 import { api, API_URL } from "../lib/api.js";
 import type { HoldRecord, SiteWithStatus, GeotabZone } from "../lib/types.js";
 import { SiteCard } from "../components/SiteCard.js";
+import { ZoneRegistration } from "../components/ZoneRegistration.js";
 import { useGeotabApi } from "../lib/geotabContext.js";
 import { fetchAllZones } from "../lib/geotabZones.js";
 
@@ -166,8 +167,13 @@ export function Dashboard() {
         </div>
       )}
 
+      {/* Zone registration — shown when Geotab zones exist but aren't yet registered as sites */}
+      {!loading && zones.size > 0 && (
+        <ZoneRegistration zones={zones} sites={sites} onSiteAdded={load} />
+      )}
+
       {/* Site cards */}
-      {!loading && sites.length === 0 && (
+      {!loading && sites.length === 0 && zones.size === 0 && (
         <p className="text-sm text-gray-500 italic">
           No active sites found. Add sites to the <code>sites</code> table in the database.
         </p>
