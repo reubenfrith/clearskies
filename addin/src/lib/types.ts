@@ -86,14 +86,12 @@ export interface GeotabZonePoint {
 export interface GeotabZone {
   id: string;
   name: string;
-  active?: boolean;
-  color?: string;
+  activeFrom?: string;
+  activeTo?: string;
   comment?: string;
-  zoneType?: GeotabEntityRef | null;
+  zoneTypes?: string[];        // e.g. ["ZoneTypeCustomerId"]
   groups?: GeotabEntityRef[];
   points: GeotabZonePoint[];
-  version?: string;
   externalReference?: string | null;
-  workTime?: number | null;
   lastModified?: string;
 }

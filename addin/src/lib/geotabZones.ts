@@ -51,7 +51,11 @@ export async function fetchAllZones(
     params
   );
 
-  return unwrapEntities(result).filter((zone) =>
-    zone?.points?.length && (includeInactive || zone.active !== false)
-  );
+  const now = new Date();
+  return unwrapEntities(result).filter((zone) => {
+    if (!zone?.points?.length) return false;
+    if (includeInactive) return true;
+    const to = zone.activeTo ? new Date(zone.activeTo) : null;
+    return !to || to > now;
+  });
 }

@@ -114,12 +114,24 @@ function buildZoneFeatures(zones: GeotabZone[], sites: SiteWithStatus[]): ZoneFe
         status: linkedSite?.status ?? "green",
         siteId: linkedSite?.id,
         siteName: linkedSite?.name,
-        zoneType: zone.zoneType?.name ?? null,
+        zoneType: zone.zoneTypes?.[0] ? zoneTypeLabel(zone.zoneTypes[0]) : null,
       };
     });
 }
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
+
+const ZONE_TYPE_LABELS: Record<string, string> = {
+  ZoneTypeCustomerId: "Customer",
+  ZoneTypeHomeId: "Home",
+  ZoneTypeOfficeId: "Office",
+  ZoneTypeServiceId: "Service",
+  ZoneTypeWorkId: "Work",
+};
+
+function zoneTypeLabel(id: string): string | null {
+  return ZONE_TYPE_LABELS[id] ?? null;
+}
 
 function ruleLabelShort(rule: string) {
   const map: Record<string, string> = {

@@ -3,6 +3,21 @@ import type { SiteWithStatus, GeotabZone } from "../lib/types.js";
 import { WeatherBadge } from "./WeatherBadge.js";
 import { CountdownTimer } from "./CountdownTimer.js";
 
+const ZONE_TYPE_LABELS: Record<string, string> = {
+  ZoneTypeCustomerId: "Customer",
+  ZoneTypeHomeId: "Home",
+  ZoneTypeOfficeId: "Office",
+  ZoneTypeServiceId: "Service",
+  ZoneTypeWorkId: "Work",
+};
+
+function zoneTypeLabel(zoneTypes: string[] | undefined): string | null {
+  for (const id of zoneTypes ?? []) {
+    if (ZONE_TYPE_LABELS[id]) return ZONE_TYPE_LABELS[id];
+  }
+  return null;
+}
+
 interface Props {
   site: SiteWithStatus;
   zone?: GeotabZone;
@@ -25,9 +40,9 @@ export function SiteCard({ site, zone }: Props) {
         <div>
           <h3 className="font-semibold text-gray-900">{site.name}</h3>
           {site.address && <p className="text-xs text-gray-500 mt-0.5">{site.address}</p>}
-          {zone?.zoneType?.name && (
+          {zoneTypeLabel(zone?.zoneTypes) && (
             <span className="inline-block text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded mt-1">
-              {zone.zoneType.name}
+              {zoneTypeLabel(zone?.zoneTypes)}
             </span>
           )}
           {zone?.comment && (
