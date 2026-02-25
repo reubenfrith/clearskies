@@ -1,9 +1,10 @@
 import { useEffect, useState, useCallback } from "react";
 import { Button, ButtonType } from "@geotab/zenith";
 import { api } from "../lib/api.js";
-import type { HoldRecord, SiteWithStatus } from "../lib/types.js";
+import type { HoldRecord, SiteWithStatus, GeotabZone } from "../lib/types.js";
 import { SiteCard } from "../components/SiteCard.js";
 import { useGeotabApi } from "../lib/geotabContext.js";
+import { fetchAllZones } from "../lib/geotabZones.js";
 
 const REFRESH_INTERVAL_MS = 30_000;
 
@@ -13,8 +14,9 @@ function deriveSiteStatus(hold: HoldRecord | null): SiteWithStatus["status"] {
 }
 
 export function Dashboard() {
-  const { session } = useGeotabApi();
+  const { session, apiRef } = useGeotabApi();
   const [sites, setSites] = useState<SiteWithStatus[]>([]);
+  const [zones, setZones] = useState<Map<string, GeotabZone>>(new Map());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
@@ -44,12 +46,18 @@ export function Dashboard() {
       setSites(withStatus);
       setLastRefresh(new Date());
       setError(null);
+
+      const geotabApi = apiRef.current;
+      if (geotabApi) {
+        const allZones = await fetchAllZones(geotabApi).catch(() => []);
+        setZones(new Map(allZones.map((z) => [z.id, z])));
+      }
     } catch (err) {
       setError(String(err));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [apiRef]);
 
   useEffect(() => {
     if (!session) return;
@@ -105,7 +113,7 @@ export function Dashboard() {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {sites.map((site) => (
-          <SiteCard key={site.id} site={site} />
+          <SiteCard key={site.id} site={site} zone={zones.get(site.geotab_zone_id ?? "")} />
         ))}
       </div>
     </div>

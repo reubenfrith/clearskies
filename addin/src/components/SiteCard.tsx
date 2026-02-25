@@ -1,10 +1,11 @@
 import { Link } from "react-router-dom";
-import type { SiteWithStatus } from "../lib/types.js";
+import type { SiteWithStatus, GeotabZone } from "../lib/types.js";
 import { WeatherBadge } from "./WeatherBadge.js";
 import { CountdownTimer } from "./CountdownTimer.js";
 
 interface Props {
   site: SiteWithStatus;
+  zone?: GeotabZone;
 }
 
 const BORDER_COLOR = {
@@ -13,7 +14,7 @@ const BORDER_COLOR = {
   red:   "border-red-500",
 };
 
-export function SiteCard({ site }: Props) {
+export function SiteCard({ site, zone }: Props) {
   const { activeHold, weather } = site;
   const border = BORDER_COLOR[site.status];
 
@@ -24,6 +25,14 @@ export function SiteCard({ site }: Props) {
         <div>
           <h3 className="font-semibold text-gray-900">{site.name}</h3>
           {site.address && <p className="text-xs text-gray-500 mt-0.5">{site.address}</p>}
+          {zone?.zoneType?.name && (
+            <span className="inline-block text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded mt-1">
+              {zone.zoneType.name}
+            </span>
+          )}
+          {zone?.comment && (
+            <p className="text-xs text-gray-400 italic mt-0.5">{zone.comment}</p>
+          )}
         </div>
         <WeatherBadge
           status={site.status}
