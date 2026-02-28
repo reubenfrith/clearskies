@@ -13,10 +13,10 @@ PROD_THRESHOLDS = {
 }
 
 DEMO_THRESHOLDS = {
-    "lightning_pct": 10,
-    "high_wind_general_mph": 5,
-    "high_wind_material_mph": 3,
-    "extreme_heat_c": 25,
+    "lightning_pct": 5,
+    "high_wind_general_mph": 3,
+    "high_wind_material_mph": 2,
+    "extreme_heat_c": 10,
 }
 
 RULE_PRIORITY = [
