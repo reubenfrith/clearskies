@@ -188,6 +188,10 @@ export function HoldManagement() {
   const [nearbyRefreshedAt, setNearbyRefreshedAt] = useState<Date | null>(null);
   const [showSendModal, setShowSendModal] = useState(false);
   const [siteNotifications, setSiteNotifications] = useState<(NotificationRecord & { site_name: string; trigger_rule: string | null })[]>([]);
+  const [showHoldForm, setShowHoldForm] = useState(false);
+  const [holdRule, setHoldRule] = useState("LIGHTNING_30_30");
+  const [holdDuration, setHoldDuration] = useState("");
+  const [issuing, setIssuing] = useState(false);
 
   const loadNearby = useCallback(async (siteData: Site) => {
     if (!apiRef.current) return;
@@ -238,6 +242,26 @@ export function HoldManagement() {
     if (!session) return;
     load();
   }, [load, session]);
+
+  async function handleIssueHold() {
+    if (!site) return;
+    setIssuing(true);
+    try {
+      await api.createHold({
+        site_id: site.id,
+        trigger_rule: holdRule,
+        issued_by: session?.userName ?? "manual",
+        hold_duration_mins: holdDuration ? parseInt(holdDuration, 10) : null,
+      });
+      setShowHoldForm(false);
+      setHoldDuration("");
+      await load();
+    } catch (err) {
+      setError(String(err));
+    } finally {
+      setIssuing(false);
+    }
+  }
 
   async function handleManualAllClear() {
     if (!hold) return;
@@ -297,9 +321,68 @@ export function HoldManagement() {
 
       {/* No active hold */}
       {!hold && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-green-800">
-          <p className="font-semibold">✅ No active hold</p>
-          <p className="text-sm mt-1">This site is currently cleared for work.</p>
+        <div className="space-y-3">
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center justify-between gap-4">
+            <div>
+              <p className="font-semibold text-green-800">✅ No active hold</p>
+              <p className="text-sm text-green-700 mt-0.5">This site is currently cleared for work.</p>
+            </div>
+            <button
+              onClick={() => setShowHoldForm((v) => !v)}
+              className="flex-shrink-0 px-3 py-1.5 text-sm font-medium rounded border border-red-300 text-red-600 hover:bg-red-50 transition-colors"
+            >
+              {showHoldForm ? "Cancel" : "⚠️ Trigger Hold"}
+            </button>
+          </div>
+
+          {showHoldForm && (
+            <div className="border border-red-200 rounded-lg p-4 bg-red-50 space-y-3">
+              <p className="text-sm font-semibold text-red-800">Issue a manual OSHA hold</p>
+
+              <div className="space-y-2">
+                <label className="block text-xs font-medium text-gray-600">OSHA Rule</label>
+                <select
+                  value={holdRule}
+                  onChange={(e) => setHoldRule(e.target.value)}
+                  className="zen-input w-full text-sm"
+                >
+                  {Object.entries(RULE_LABELS).map(([value, label]) => (
+                    <option key={value} value={value}>{label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-xs font-medium text-gray-600">
+                  Duration (minutes) — leave blank to hold until conditions clear
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  placeholder="e.g. 30"
+                  value={holdDuration}
+                  onChange={(e) => setHoldDuration(e.target.value)}
+                  className="zen-input w-full text-sm"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-1">
+                <button
+                  onClick={() => { setShowHoldForm(false); setHoldDuration(""); }}
+                  className="px-3 py-1.5 text-sm rounded border border-gray-300 text-gray-700 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleIssueHold}
+                  disabled={issuing}
+                  className="px-4 py-1.5 text-sm font-medium rounded bg-red-600 text-white hover:bg-red-700 disabled:opacity-60"
+                >
+                  {issuing ? "Issuing…" : "Issue Hold"}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
