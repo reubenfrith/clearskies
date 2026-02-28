@@ -12,6 +12,7 @@ class SiteCreate(BaseModel):
     lat: float
     lng: float
     geotab_zone_id: str
+    radius_m: int = 200
 
 
 @router.get("/sites")
@@ -30,15 +31,16 @@ async def create_site(body: SiteCreate, pool=Depends(get_pool)):
     async with pool.acquire() as conn:
         row = await conn.fetchrow(
             """
-            INSERT INTO sites (name, address, lat, lng, geotab_zone_id)
-            VALUES ($1, $2, $3, $4, $5)
+            INSERT INTO sites (name, address, lat, lng, geotab_zone_id, radius_m)
+            VALUES ($1, $2, $3, $4, $5, $6)
             ON CONFLICT (geotab_zone_id) DO UPDATE
               SET name = EXCLUDED.name,
                   address = EXCLUDED.address,
+                  radius_m = EXCLUDED.radius_m,
                   active = true
             RETURNING *
             """,
-            body.name, body.address, body.lat, body.lng, body.geotab_zone_id,
+            body.name, body.address, body.lat, body.lng, body.geotab_zone_id, body.radius_m,
         )
     return serialize_row(row)
 

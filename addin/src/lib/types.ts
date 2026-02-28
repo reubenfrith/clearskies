@@ -8,6 +8,7 @@ export interface Site {
   lat: number;
   lng: number;
   geotab_zone_id: string;
+  radius_m: number;
   active: boolean;
 }
 

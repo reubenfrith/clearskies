@@ -10,7 +10,7 @@ import { useGeotabApi } from "../lib/geotabContext.js";
 
 // ─── Nearby vehicles ──────────────────────────────────────────────────────────
 
-const NEARBY_RADIUS_M = 500;
+const NEARBY_RADIUS_FALLBACK_M = 1000;
 const RECENT_MINS = 5;
 
 interface NearbyVehicle {
@@ -47,6 +47,7 @@ async function fetchNearbyVehicles(
   geotabApi: { call: Function },
   site: Site
 ): Promise<NearbyVehicle[]> {
+  const radiusM = site.radius_m ?? NEARBY_RADIUS_FALLBACK_M;
   const cutoff = new Date(Date.now() - RECENT_MINS * 60 * 1000);
 
   const devices = await geotabGet<{ id: string; name: string }>(geotabApi, "Device");
@@ -69,7 +70,7 @@ async function fetchNearbyVehicles(
     if (lastSeen < cutoff) continue;
 
     const dist = haversineMetres(site.lat, site.lng, lat, lng);
-    if (dist > NEARBY_RADIUS_M) continue;
+    if (dist > radiusM) continue;
 
     const id: string = s.device?.id ?? "";
     nearby.push({
@@ -212,7 +213,7 @@ export function HoldManagement() {
       {apiRef.current && (
         <Card
           title={
-            `Vehicles nearby — within ${NEARBY_RADIUS_M}m, last ${RECENT_MINS} min` +
+            `Vehicles nearby — within ${site.radius_m ?? NEARBY_RADIUS_FALLBACK_M}m, last ${RECENT_MINS} min` +
             (nearbyRefreshedAt ? ` · ${nearbyRefreshedAt.toLocaleTimeString()}` : "")
           }
           fullWidth

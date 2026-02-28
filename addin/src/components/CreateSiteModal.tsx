@@ -47,6 +47,7 @@ export function CreateSiteModal({ geotabApi, onDone, onClose }: Props) {
         lat: latNum,
         lng: lngNum,
         geotab_zone_id: zoneId,
+        radius_m: radiusNum,
       });
 
       onDone();

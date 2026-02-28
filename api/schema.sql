@@ -14,9 +14,13 @@ create table if not exists sites (
   lat              float not null,
   lng              float not null,
   geotab_zone_id   text not null unique,
+  radius_m         int not null default 200,
   active           boolean not null default true,
   created_at       timestamptz not null default now()
 );
+
+-- Migration (run once against existing Railway DB):
+-- ALTER TABLE sites ADD COLUMN IF NOT EXISTS radius_m INT NOT NULL DEFAULT 200;
 
 comment on table sites is 'Active job sites monitored by the ClearSkies agent.';
 comment on column sites.geotab_zone_id is 'Zone ID from MyGeotab → Administration → Zones.';

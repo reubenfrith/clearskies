@@ -66,7 +66,7 @@ export const api = {
       body: JSON.stringify(data),
     }),
 
-  createSite: (data: { name: string; address?: string; lat: number; lng: number; geotab_zone_id: string }) =>
+  createSite: (data: { name: string; address?: string; lat: number; lng: number; geotab_zone_id: string; radius_m: number }) =>
     apiFetch<Site>("/api/sites", { method: "POST", body: JSON.stringify(data) }),
 
   deactivateSite: (siteId: string) =>
