@@ -72,7 +72,7 @@ async function fetchNearbyVehicles(
     const id: string = s.device?.id ?? "";
     nearby.push({
       deviceId: id,
-      deviceName: nameById.get(id) ?? "Unknown",
+      deviceName: s.device?.name ?? nameById.get(id) ?? (id || "Unknown"),
       driverName: s.driver?.name ?? null,
       lat,
       lng,
