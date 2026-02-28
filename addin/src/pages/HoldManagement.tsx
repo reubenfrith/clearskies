@@ -8,6 +8,7 @@ import { CountdownTimer } from "../components/CountdownTimer.js";
 import { VehicleList } from "../components/VehicleList.js";
 import { useGeotabApi } from "../lib/geotabContext.js";
 import { SendMessageModal } from "../components/SendMessageModal.js";
+import { Tooltip } from "../components/Tooltip.js";
 
 // ─── Nearby data ──────────────────────────────────────────────────────────────
 
@@ -332,9 +333,11 @@ export function HoldManagement() {
                         <td className="py-1.5 font-medium text-gray-900">
                           {v.deviceName}
                           {v.isAsset && (
-                            <span className="ml-1.5 text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">
-                              Asset
-                            </span>
+                            <Tooltip content="Non-vehicle asset (e.g. equipment or trailer) — cannot receive Geotab TextMessages">
+                              <span className="ml-1.5 text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded cursor-default">
+                                Asset
+                              </span>
+                            </Tooltip>
                           )}
                         </td>
                         <td className="py-1.5 text-gray-600">{v.driverName ?? "—"}</td>
@@ -350,20 +353,24 @@ export function HoldManagement() {
               )}
               <div className="mt-3 flex justify-end gap-3">
                 {nearbyVehicles.length > 0 && (
-                  <button
-                    onClick={() => setShowSendModal(true)}
-                    className="text-xs text-blue-600 hover:text-blue-800"
-                  >
-                    📨 Send Message
-                  </button>
+                  <Tooltip content="Send a custom Geotab TextMessage to selected drivers near this site">
+                    <button
+                      onClick={() => setShowSendModal(true)}
+                      className="text-xs text-blue-600 hover:text-blue-800"
+                    >
+                      📨 Send Message
+                    </button>
+                  </Tooltip>
                 )}
-                <button
-                  onClick={() => site && loadNearby(site)}
-                  disabled={nearbyLoading}
-                  className="text-xs text-blue-600 hover:text-blue-800 disabled:opacity-50"
-                >
-                  {nearbyLoading ? "Refreshing…" : "↻ Refresh"}
-                </button>
+                <Tooltip content="Re-fetch live device positions from Geotab">
+                  <button
+                    onClick={() => site && loadNearby(site)}
+                    disabled={nearbyLoading}
+                    className="text-xs text-blue-600 hover:text-blue-800 disabled:opacity-50"
+                  >
+                    {nearbyLoading ? "Refreshing…" : "↻ Refresh"}
+                  </button>
+                </Tooltip>
               </div>
             </Card.Content>
           </Card>
@@ -423,9 +430,17 @@ export function HoldManagement() {
                   <thead>
                     <tr className="text-left text-xs text-gray-500 border-b">
                       <th className="pb-1 font-medium">Device</th>
-                      <th className="pb-1 font-medium">Type</th>
+                      <th className="pb-1 font-medium">
+                        <Tooltip content="hold = triggered alert · all_clear = hold lifted · custom = manually sent">
+                          <span className="cursor-default border-b border-dotted border-gray-400">Type</span>
+                        </Tooltip>
+                      </th>
                       <th className="pb-1 font-medium">Status</th>
-                      <th className="pb-1 font-medium">Preview</th>
+                      <th className="pb-1 font-medium">
+                        <Tooltip content="First 40 characters of the message body">
+                          <span className="cursor-default border-b border-dotted border-gray-400">Preview</span>
+                        </Tooltip>
+                      </th>
                       <th className="pb-1 font-medium text-right">Time</th>
                     </tr>
                   </thead>
@@ -571,13 +586,15 @@ export function HoldManagement() {
 
           {/* Manual all-clear */}
           <div className="flex justify-end">
-            <Button
-              type={ButtonType.Primary}
-              onClick={handleManualAllClear}
-              disabled={clearing}
-            >
-              {clearing ? "Issuing all-clear…" : "Issue Manual All-Clear"}
-            </Button>
+            <Tooltip content="Manually close this hold — drivers will NOT receive an automatic all-clear notification">
+              <Button
+                type={ButtonType.Primary}
+                onClick={handleManualAllClear}
+                disabled={clearing}
+              >
+                {clearing ? "Issuing all-clear…" : "Issue Manual All-Clear"}
+              </Button>
+            </Tooltip>
           </div>
         </div>
       )}

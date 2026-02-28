@@ -1,4 +1,5 @@
 import type { OshaRule, SiteStatus } from "../lib/types.js";
+import { Tooltip } from "./Tooltip.js";
 
 interface Props {
   status: SiteStatus;
@@ -21,12 +22,20 @@ const RULE_LABELS: Record<OshaRule, string> = {
   EXTREME_HEAT:            "🌡️ Extreme Heat",
 };
 
+const STATUS_TOOLTIPS: Partial<Record<SiteStatus, string>> = {
+  amber: "Weather is approaching OSHA hold thresholds — being monitored but work can continue",
+  green: "No active hold — conditions are within safe limits",
+  red:   "OSHA weather hold is active — work must stop",
+};
+
 export function WeatherBadge({ status, rule }: Props) {
   const cfg = STATUS_CONFIG[status];
-  return (
+  const badge = (
     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${cfg.bg} ${cfg.text}`}>
       <span className={`w-2 h-2 rounded-full ${cfg.dot}`} />
       {rule ? RULE_LABELS[rule] : cfg.label}
     </span>
   );
+  const tip = STATUS_TOOLTIPS[status];
+  return tip ? <Tooltip content={tip}>{badge}</Tooltip> : badge;
 }

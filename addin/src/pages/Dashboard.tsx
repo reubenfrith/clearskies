@@ -7,6 +7,7 @@ import { ZoneRegistration } from "../components/ZoneRegistration.js";
 import { CreateSiteModal } from "../components/CreateSiteModal.js";
 import { useGeotabApi } from "../lib/geotabContext.js";
 import { fetchAllZones } from "../lib/geotabZones.js";
+import { Tooltip } from "../components/Tooltip.js";
 
 const REFRESH_INTERVAL_MS = 30_000;
 
@@ -126,17 +127,21 @@ export function Dashboard() {
         <div className="text-right flex flex-col items-end gap-1">
           <div className="flex items-center gap-2">
             {apiRef.current && (
-              <Button type={ButtonType.Primary} onClick={() => setShowCreateModal(true)}>
-                + Create Site
-              </Button>
+              <Tooltip content="Register a Geotab zone as a new monitored site" position="bottom">
+                <Button type={ButtonType.Primary} onClick={() => setShowCreateModal(true)}>
+                  + Create Site
+                </Button>
+              </Tooltip>
             )}
-            <button
-              onClick={handleTriggerPoll}
-              disabled={triggering}
-              className="px-3 py-1.5 text-sm font-medium rounded-md bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-60 transition-colors"
-            >
-              {triggering ? "Sending…" : "⚡ Send Alerts"}
-            </button>
+            <Tooltip content="Manually run the weather check for all sites and send Geotab TextMessages if OSHA thresholds are breached" position="bottom">
+              <button
+                onClick={handleTriggerPoll}
+                disabled={triggering}
+                className="px-3 py-1.5 text-sm font-medium rounded-md bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-60 transition-colors"
+              >
+                {triggering ? "Sending…" : "⚡ Send Alerts"}
+              </button>
+            </Tooltip>
             <Button type={ButtonType.Tertiary} onClick={load}>
               Refresh
             </Button>
@@ -150,12 +155,14 @@ export function Dashboard() {
           <p className="text-xs text-gray-400">
             Updated {lastRefresh.toLocaleTimeString()}
           </p>
-          <button
-            onClick={() => setShowDebug((v) => !v)}
-            className="text-xs text-gray-400 hover:text-gray-600 underline"
-          >
-            {showDebug ? "Hide debug" : "Debug"}
-          </button>
+          <Tooltip content="Show API connectivity and data loading diagnostics">
+            <button
+              onClick={() => setShowDebug((v) => !v)}
+              className="text-xs text-gray-400 hover:text-gray-600 underline"
+            >
+              {showDebug ? "Hide debug" : "Debug"}
+            </button>
+          </Tooltip>
         </div>
       </div>
 

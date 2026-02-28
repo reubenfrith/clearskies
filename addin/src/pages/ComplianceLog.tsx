@@ -6,6 +6,7 @@ import autoTable from "jspdf-autotable";
 import { api } from "../lib/api.js";
 import type { HoldRecord } from "../lib/types.js";
 import { useGeotabApi } from "../lib/geotabContext.js";
+import { Tooltip } from "../components/Tooltip.js";
 
 const RULE_LABELS: Record<string, string> = {
   LIGHTNING_30_30: "Lightning (30/30)",
@@ -183,9 +184,11 @@ export function ComplianceLog() {
             Full OSHA weather hold history — {totalCount} event(s) recorded
           </p>
         </div>
-        <Button type={ButtonType.Secondary} onClick={exportPDF} disabled={exporting || loading}>
-          {exporting ? "Exporting…" : "Export PDF"}
-        </Button>
+        <Tooltip content="Download all hold events as an OSHA-compliant landscape PDF report" position="bottom">
+          <Button type={ButtonType.Secondary} onClick={exportPDF} disabled={exporting || loading}>
+            {exporting ? "Exporting…" : "Export PDF"}
+          </Button>
+        </Tooltip>
       </div>
 
       {error && (

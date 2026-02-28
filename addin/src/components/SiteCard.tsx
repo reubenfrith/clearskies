@@ -4,6 +4,7 @@ import type { GeotabApi } from "../geotab.js";
 import type { SiteWithStatus, GeotabZone } from "../lib/types.js";
 import { WeatherBadge } from "./WeatherBadge.js";
 import { CountdownTimer } from "./CountdownTimer.js";
+import { Tooltip } from "./Tooltip.js";
 import { api } from "../lib/api.js";
 import { deactivateGeotabZone } from "../lib/geotabZones.js";
 
@@ -63,9 +64,11 @@ export function SiteCard({ site, zone, apiRef, onRemoved }: Props) {
           <h3 className="font-semibold text-gray-900">{site.name}</h3>
           {site.address && <p className="text-xs text-gray-500 mt-0.5">{site.address}</p>}
           {zoneTypeLabel(zone?.zoneTypes) && (
-            <span className="inline-block text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded mt-1">
-              {zoneTypeLabel(zone?.zoneTypes)}
-            </span>
+            <Tooltip content="Geotab zone category" position="bottom">
+              <span className="inline-block text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded mt-1 cursor-default">
+                {zoneTypeLabel(zone?.zoneTypes)}
+              </span>
+            </Tooltip>
           )}
           {zone?.comment && (
             <p className="text-xs text-gray-400 italic mt-0.5">{zone.comment}</p>
@@ -77,13 +80,15 @@ export function SiteCard({ site, zone, apiRef, onRemoved }: Props) {
             rule={activeHold?.trigger_rule}
           />
           {onRemoved && (
-            <button
-              onClick={handleRemove}
-              disabled={removing}
-              className="text-xs text-red-500 hover:text-red-700 disabled:opacity-50 mt-1"
-            >
-              {removing ? "Removing…" : "Remove"}
-            </button>
+            <Tooltip content="Deactivates this site and sets the Geotab zone's expiry date to stop monitoring">
+              <button
+                onClick={handleRemove}
+                disabled={removing}
+                className="text-xs text-red-500 hover:text-red-700 disabled:opacity-50 mt-1"
+              >
+                {removing ? "Removing…" : "Remove"}
+              </button>
+            </Tooltip>
           )}
         </div>
       </div>
@@ -91,9 +96,9 @@ export function SiteCard({ site, zone, apiRef, onRemoved }: Props) {
       {/* Weather summary */}
       {weather && (
         <div className="grid grid-cols-3 gap-2 text-center bg-gray-50 rounded p-2">
-          <Stat label="Wind Gust" value={`${weather.wind_gust_mph} mph`} />
-          <Stat label="Lightning" value={`${weather.lightning_probability_pct}%`} />
-          <Stat label="Heat" value={`${weather.apparent_temp_c}°C`} />
+          <Stat label="Wind Gust" value={`${weather.wind_gust_mph} mph`} tooltip="Maximum wind gust from Open-Meteo (mph)" />
+          <Stat label="Lightning" value={`${weather.lightning_probability_pct}%`} tooltip="CAPE-based probability of lightning in the area" />
+          <Stat label="Heat" value={`${weather.apparent_temp_c}°C`} tooltip="Apparent (feels-like) temperature accounting for humidity" />
         </div>
       )}
 
@@ -128,10 +133,11 @@ export function SiteCard({ site, zone, apiRef, onRemoved }: Props) {
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function Stat({ label, value, tooltip }: { label: string; value: string; tooltip?: string }) {
+  const labelEl = <div className="text-xs text-gray-500 cursor-default">{label}</div>;
   return (
     <div>
-      <div className="text-xs text-gray-500">{label}</div>
+      {tooltip ? <Tooltip content={tooltip}>{labelEl}</Tooltip> : labelEl}
       <div className="text-sm font-semibold text-gray-800">{value}</div>
     </div>
   );

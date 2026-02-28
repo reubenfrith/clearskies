@@ -1,11 +1,12 @@
 import { useEffect, useState, useCallback } from "react";
-import { MapContainer, TileLayer, Marker, Popup, Polygon, Tooltip, CircleMarker } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, Polygon, Tooltip as LeafletTooltip, CircleMarker } from "react-leaflet";
 import L from "leaflet";
 import { Button, ButtonType } from "@geotab/zenith";
 import { api } from "../lib/api.js";
 import { useGeotabApi } from "../lib/geotabContext.js";
 import { fetchAllZones } from "../lib/geotabZones.js";
 import { fetchSiteWeather } from "../lib/weather.js";
+import { Tooltip } from "../components/Tooltip.js";
 import type { SiteWeather } from "../lib/weather.js";
 import type {
   Site,
@@ -348,26 +349,30 @@ export function MapView() {
       {/* Top-right controls: layer toggles + refresh */}
       <div className="absolute top-3 right-3 z-[1000] flex flex-col items-end gap-2">
         <div className="flex items-center gap-1.5">
-          <button
-            onClick={() => { setShowTempLayer((v) => !v); setShowPrecipLayer(false); }}
-            className={`px-3 py-1 rounded-full text-xs font-medium border shadow transition-colors ${
-              showTempLayer
-                ? "bg-amber-500 text-white border-amber-600"
-                : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-            }`}
-          >
-            🌡 Temp
-          </button>
-          <button
-            onClick={() => { setShowPrecipLayer((v) => !v); setShowTempLayer(false); }}
-            className={`px-3 py-1 rounded-full text-xs font-medium border shadow transition-colors ${
-              showPrecipLayer
-                ? "bg-blue-500 text-white border-blue-600"
-                : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-            }`}
-          >
-            🌧 Rain
-          </button>
+          <Tooltip content="Toggle apparent temperature heatmap — blue (cold) → green → amber → red (≥38°C)" position="bottom">
+            <button
+              onClick={() => { setShowTempLayer((v) => !v); setShowPrecipLayer(false); }}
+              className={`px-3 py-1 rounded-full text-xs font-medium border shadow transition-colors ${
+                showTempLayer
+                  ? "bg-amber-500 text-white border-amber-600"
+                  : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+              }`}
+            >
+              🌡 Temp
+            </button>
+          </Tooltip>
+          <Tooltip content="Toggle precipitation probability heatmap — light blue (0%) → dark blue (≥80%)" position="bottom">
+            <button
+              onClick={() => { setShowPrecipLayer((v) => !v); setShowTempLayer(false); }}
+              className={`px-3 py-1 rounded-full text-xs font-medium border shadow transition-colors ${
+                showPrecipLayer
+                  ? "bg-blue-500 text-white border-blue-600"
+                  : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+              }`}
+            >
+              🌧 Rain
+            </button>
+          </Tooltip>
           <Button type={ButtonType.Tertiary} onClick={load}>
             Refresh
           </Button>
@@ -458,7 +463,7 @@ export function MapView() {
               radius={60}
               pathOptions={{ fillColor: colour, fillOpacity: 0.35, stroke: false }}
             >
-              <Tooltip>{site.name} — {w.apparent_temp_c}°C apparent</Tooltip>
+              <LeafletTooltip>{site.name} — {w.apparent_temp_c}°C apparent</LeafletTooltip>
             </CircleMarker>
           );
         })}
@@ -475,7 +480,7 @@ export function MapView() {
               radius={60}
               pathOptions={{ fillColor: colour, fillOpacity: 0.35, stroke: false }}
             >
-              <Tooltip>{site.name} — {w.precipitation_probability_pct}% chance of rain</Tooltip>
+              <LeafletTooltip>{site.name} — {w.precipitation_probability_pct}% chance of rain</LeafletTooltip>
             </CircleMarker>
           );
         })}
@@ -495,7 +500,7 @@ export function MapView() {
                 weight: zone.siteId ? 2 : 1,
               }}
             >
-              <Tooltip sticky>
+              <LeafletTooltip sticky>
                 <div className="text-xs space-y-0.5 min-w-[140px]">
                   <p className="font-semibold">{zone.name}</p>
                   {zone.zoneType && <p className="text-gray-500">{zone.zoneType}</p>}
@@ -503,7 +508,7 @@ export function MapView() {
                     <p className="text-gray-500">Linked site: {zone.siteName}</p>
                   )}
                 </div>
-              </Tooltip>
+              </LeafletTooltip>
             </Polygon>
           );
         })}
