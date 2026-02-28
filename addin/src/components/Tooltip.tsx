@@ -1,6 +1,8 @@
+import type { ReactNode } from "react";
+
 interface Props {
   content: string;
-  children: React.ReactNode;
+  children: ReactNode;
   position?: "top" | "bottom";
 }
 

@@ -28,6 +28,18 @@ export type OshaRule =
   | "HIGH_WIND_MATERIAL_HANDLING"
   | "EXTREME_HEAT";
 
+export interface NearbyVehicle {
+  deviceId: string;
+  deviceName: string;
+  isAsset: boolean;
+  driverName: string | null;
+  lat: number;
+  lng: number;
+  speed: number;
+  distanceMetres: number;
+  lastSeen: Date;
+}
+
 export interface VehicleOnSite {
   device_id: string;
   device_name: string;

@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button, ButtonType, Card } from "@geotab/zenith";
 import { api } from "../lib/api.js";
-import type { Site, HoldRecord, NotificationRecord } from "../lib/types.js";
+import type { Site, HoldRecord, NotificationRecord, NearbyVehicle } from "../lib/types.js";
 import { WeatherBadge } from "../components/WeatherBadge.js";
 import { CountdownTimer } from "../components/CountdownTimer.js";
 import { VehicleList } from "../components/VehicleList.js";
@@ -16,17 +16,6 @@ const NEARBY_RADIUS_FALLBACK_M = 1000;
 const RECENT_MINS = 60;
 const ZONE_HISTORY_HOURS = 2;
 
-export interface NearbyVehicle {
-  deviceId: string;
-  deviceName: string;
-  isAsset: boolean;
-  driverName: string | null;
-  lat: number;
-  lng: number;
-  speed: number;
-  distanceMetres: number;
-  lastSeen: Date;
-}
 
 interface ZoneVisit {
   deviceId: string;
@@ -197,18 +186,16 @@ export function HoldManagement() {
     if (!apiRef.current) return;
     setNearbyLoading(true);
     try {
-      const [vehicles, history, drivers, logs] = await Promise.all([
+      const [vehicles, history, drivers] = await Promise.all([
         fetchNearbyVehicles(apiRef.current, siteData),
         siteData.geotab_zone_id
           ? fetchZoneHistory(apiRef.current, siteData.geotab_zone_id)
           : Promise.resolve([] as ZoneVisit[]),
         fetchNearbyDrivers(apiRef.current, siteData),
-        api.getSiteLogs(siteData.id),
       ]);
       setNearbyVehicles(vehicles);
       setZoneHistory(history);
       setNearbyDrivers(drivers);
-      setSiteNotifications(logs.items);
       setNearbyRefreshedAt(new Date());
     } catch {
       setNearbyVehicles([]);
@@ -231,6 +218,8 @@ export function HoldManagement() {
       setHold(activeHolds[0] ?? null);
       setError(null);
       loadNearby(siteData);
+      // Load notification history independently — failure must not block the page
+      api.getSiteLogs(siteId).then((r) => setSiteNotifications(r.items)).catch(() => {});
     } catch (err) {
       setError(String(err));
     } finally {

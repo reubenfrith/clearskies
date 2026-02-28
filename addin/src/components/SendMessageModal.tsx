@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { api } from "../lib/api.js";
-import type { NearbyVehicle } from "../pages/HoldManagement.js";
+import type { NearbyVehicle } from "../lib/types.js";
 
 interface Props {
   siteId: string;
