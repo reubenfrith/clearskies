@@ -79,4 +79,7 @@ export const api = {
     apiFetch<PagedResponse<NotificationRecord & { site_name: string; trigger_rule: string }>>(
       `/api/logs?page=${page}&page_size=${pageSize}`
     ),
+
+  triggerPoll: () =>
+    apiFetch<{ status: string }>("/api/poll", { method: "POST" }),
 };

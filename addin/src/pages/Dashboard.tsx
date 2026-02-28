@@ -32,6 +32,23 @@ export function Dashboard() {
   const [debugInfo, setDebugInfo] = useState<DebugInfo | null>(null);
   const [showDebug, setShowDebug] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [triggering, setTriggering] = useState(false);
+  const [triggerResult, setTriggerResult] = useState<"ok" | "error" | null>(null);
+
+  async function handleTriggerPoll() {
+    setTriggering(true);
+    setTriggerResult(null);
+    try {
+      await api.triggerPoll();
+      setTriggerResult("ok");
+      await load();
+    } catch {
+      setTriggerResult("error");
+    } finally {
+      setTriggering(false);
+      setTimeout(() => setTriggerResult(null), 4000);
+    }
+  }
 
   const load = useCallback(async () => {
     try {
@@ -107,14 +124,29 @@ export function Dashboard() {
           </p>
         </div>
         <div className="text-right flex flex-col items-end gap-1">
-          {apiRef.current && (
-            <Button type={ButtonType.Primary} onClick={() => setShowCreateModal(true)}>
-              + Create Site
+          <div className="flex items-center gap-2">
+            {apiRef.current && (
+              <Button type={ButtonType.Primary} onClick={() => setShowCreateModal(true)}>
+                + Create Site
+              </Button>
+            )}
+            <button
+              onClick={handleTriggerPoll}
+              disabled={triggering}
+              className="px-3 py-1.5 text-sm font-medium rounded-md bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-60 transition-colors"
+            >
+              {triggering ? "Sending…" : "⚡ Send Alerts"}
+            </button>
+            <Button type={ButtonType.Tertiary} onClick={load}>
+              Refresh
             </Button>
+          </div>
+          {triggerResult === "ok" && (
+            <p className="text-xs text-green-600 font-medium">Poll complete — dashboard refreshed</p>
           )}
-          <Button type={ButtonType.Tertiary} onClick={load}>
-            Refresh
-          </Button>
+          {triggerResult === "error" && (
+            <p className="text-xs text-red-500 font-medium">Poll failed — check API logs</p>
+          )}
           <p className="text-xs text-gray-400">
             Updated {lastRefresh.toLocaleTimeString()}
           </p>
