@@ -50,9 +50,12 @@ async function fetchNearbyVehicles(
   const radiusM = site.radius_m ?? NEARBY_RADIUS_FALLBACK_M;
   const cutoff = new Date(Date.now() - RECENT_MINS * 60 * 1000);
 
-  // Fetch all device statuses — no search filter (DeviceStatusInfoSearch doesn't
-  // support bulk deviceIds lookup; filter by distance + recency client-side).
-  const statuses = await geotabGet<any>(geotabApi, "DeviceStatusInfo");
+  // Fetch devices for name lookup — DeviceStatusInfo only returns { id } refs.
+  const [devices, statuses] = await Promise.all([
+    geotabGet<{ id: string; name: string }>(geotabApi, "Device"),
+    geotabGet<any>(geotabApi, "DeviceStatusInfo"),
+  ]);
+  const nameById = new Map(devices.map((d) => [d.id, d.name]));
 
   const nearby: NearbyVehicle[] = [];
   for (const s of statuses) {
@@ -69,7 +72,7 @@ async function fetchNearbyVehicles(
     const id: string = s.device?.id ?? "";
     nearby.push({
       deviceId: id,
-      deviceName: s.device?.name ?? "Unknown",
+      deviceName: nameById.get(id) ?? "Unknown",
       driverName: s.driver?.name ?? null,
       lat,
       lng,
