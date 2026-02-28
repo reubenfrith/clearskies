@@ -50,7 +50,7 @@ async def list_active_holds(
 @router.get("/holds")
 async def list_holds(
     page: int = Query(0, ge=0),
-    page_size: int = Query(25, ge=1, le=100),
+    page_size: int = Query(25, ge=1, le=500),
     pool=Depends(get_pool),
 ):
     """Return paginated hold history (all holds, closed and open), joined with site name."""

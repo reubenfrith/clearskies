@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "@geotab/zenith": "latest",
+    "jspdf": "^4.2.0",
+    "jspdf-autotable": "^5.0.7",
     "leaflet": "^1.9.0",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",

@@ -18,6 +18,7 @@ export interface WeatherSnapshot {
   apparent_temp_c: number;
   lightning_probability_pct: number;
   weather_code: number;
+  precipitation_mm?: number;
 }
 
 export type OshaRule =
@@ -53,10 +54,11 @@ export interface HoldRecord {
 
 export interface NotificationRecord {
   driver_name: string | null;
-  phone_number: string;
+  phone_number: string | null;
+  geotab_device_id: string | null;
   message_type: "hold" | "all_clear";
   sent_at: string;
-  twilio_sid: string;
+  twilio_sid: string | null;
   status: string;
 }
 

@@ -1,7 +1,11 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
+import type { GeotabApi } from "../geotab.js";
 import type { SiteWithStatus, GeotabZone } from "../lib/types.js";
 import { WeatherBadge } from "./WeatherBadge.js";
 import { CountdownTimer } from "./CountdownTimer.js";
+import { api } from "../lib/api.js";
+import { deactivateGeotabZone } from "../lib/geotabZones.js";
 
 const ZONE_TYPE_LABELS: Record<string, string> = {
   ZoneTypeCustomerId: "Customer",
@@ -21,6 +25,8 @@ function zoneTypeLabel(zoneTypes: string[] | undefined): string | null {
 interface Props {
   site: SiteWithStatus;
   zone?: GeotabZone;
+  apiRef?: React.RefObject<GeotabApi | null>;
+  onRemoved?: () => void;
 }
 
 const BORDER_COLOR = {
@@ -29,9 +35,25 @@ const BORDER_COLOR = {
   red:   "border-red-500",
 };
 
-export function SiteCard({ site, zone }: Props) {
+export function SiteCard({ site, zone, apiRef, onRemoved }: Props) {
   const { activeHold, weather } = site;
   const border = BORDER_COLOR[site.status];
+  const [removing, setRemoving] = useState(false);
+
+  async function handleRemove() {
+    if (!confirm(`Remove "${site.name}"? This will deactivate the site and its Geotab zone.`)) return;
+    setRemoving(true);
+    try {
+      await api.deactivateSite(site.id);
+      if (apiRef?.current && site.geotab_zone_id) {
+        await deactivateGeotabZone(apiRef.current, site.geotab_zone_id).catch(() => {});
+      }
+      onRemoved?.();
+    } catch (err) {
+      alert(`Failed to remove site: ${err}`);
+      setRemoving(false);
+    }
+  }
 
   return (
     <div className={`bg-white rounded-lg border-l-4 ${border} shadow-sm p-4 flex flex-col gap-3`}>
@@ -49,10 +71,21 @@ export function SiteCard({ site, zone }: Props) {
             <p className="text-xs text-gray-400 italic mt-0.5">{zone.comment}</p>
           )}
         </div>
-        <WeatherBadge
-          status={site.status}
-          rule={activeHold?.trigger_rule}
-        />
+        <div className="flex flex-col items-end gap-1">
+          <WeatherBadge
+            status={site.status}
+            rule={activeHold?.trigger_rule}
+          />
+          {onRemoved && (
+            <button
+              onClick={handleRemove}
+              disabled={removing}
+              className="text-xs text-red-500 hover:text-red-700 disabled:opacity-50 mt-1"
+            >
+              {removing ? "Removing…" : "Remove"}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Weather summary */}

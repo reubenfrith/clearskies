@@ -1,10 +1,12 @@
 import { useEffect, useState, useCallback } from "react";
-import { MapContainer, TileLayer, Marker, Popup, Polygon, Tooltip } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, Polygon, Tooltip, CircleMarker } from "react-leaflet";
 import L from "leaflet";
 import { Button, ButtonType } from "@geotab/zenith";
 import { api } from "../lib/api.js";
 import { useGeotabApi } from "../lib/geotabContext.js";
 import { fetchAllZones } from "../lib/geotabZones.js";
+import { fetchSiteWeather } from "../lib/weather.js";
+import type { SiteWeather } from "../lib/weather.js";
 import type {
   Site,
   HoldRecord,
@@ -143,6 +145,52 @@ function ruleLabelShort(rule: string) {
   return map[rule] ?? rule;
 }
 
+// ─── Heatmap colour helpers ────────────────────────────────────────────────────
+
+function lerpColour(a: [number, number, number], b: [number, number, number], t: number): string {
+  const r = Math.round(a[0] + (b[0] - a[0]) * t);
+  const g = Math.round(a[1] + (b[1] - a[1]) * t);
+  const bv = Math.round(a[2] + (b[2] - a[2]) * t);
+  return `rgb(${r},${g},${bv})`;
+}
+
+function tempColour(c: number): string {
+  // ≤0 blue → 15 green → 28 amber → ≥38 red
+  const stops: [number, [number, number, number]][] = [
+    [0,  [96, 165, 250]],
+    [15, [163, 230, 53]],
+    [28, [251, 191, 36]],
+    [38, [239, 68, 68]],
+  ];
+  if (c <= stops[0][0]) return `rgb(${stops[0][1].join(",")})`;
+  if (c >= stops[stops.length - 1][0]) return `rgb(${stops[stops.length - 1][1].join(",")})`;
+  for (let i = 0; i < stops.length - 1; i++) {
+    if (c <= stops[i + 1][0]) {
+      const t = (c - stops[i][0]) / (stops[i + 1][0] - stops[i][0]);
+      return lerpColour(stops[i][1], stops[i + 1][1], t);
+    }
+  }
+  return "rgb(239,68,68)";
+}
+
+function precipColour(mm: number): string {
+  // 0 very light → 5mm mid → ≥25mm dark blue
+  const stops: [number, [number, number, number]][] = [
+    [0,  [224, 242, 254]],
+    [5,  [56, 189, 248]],
+    [25, [30, 58, 138]],
+  ];
+  if (mm <= 0) return `rgb(${stops[0][1].join(",")})`;
+  if (mm >= stops[stops.length - 1][0]) return `rgb(${stops[stops.length - 1][1].join(",")})`;
+  for (let i = 0; i < stops.length - 1; i++) {
+    if (mm <= stops[i + 1][0]) {
+      const t = (mm - stops[i][0]) / (stops[i + 1][0] - stops[i][0]);
+      return lerpColour(stops[i][1], stops[i + 1][1], t);
+    }
+  }
+  return "rgb(30,58,138)";
+}
+
 function computeBounds(sites: Site[]): [[number, number], [number, number]] | null {
   if (!sites.length) return null;
   const lats = sites.map((s) => s.lat);
@@ -186,6 +234,9 @@ export function MapView() {
   const [liveAvailable, setLiveAvailable] = useState(false);
   const [zones, setZones] = useState<ZoneFeature[]>([]);
   const [zoneError, setZoneError] = useState<string | null>(null);
+  const [siteWeather, setSiteWeather] = useState<Map<string, SiteWeather>>(new Map());
+  const [showTempLayer, setShowTempLayer] = useState(false);
+  const [showPrecipLayer, setShowPrecipLayer] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -213,6 +264,19 @@ export function MapView() {
       setSites(withStatus);
       setLastRefresh(new Date());
       setError(null);
+
+      // Fetch fresh weather for heatmap (independent of hold state)
+      const weatherEntries = await Promise.all(
+        withStatus.map(async (s) => {
+          try {
+            const w = await fetchSiteWeather(s.lat, s.lng);
+            return [s.id, w] as [string, SiteWeather];
+          } catch {
+            return null;
+          }
+        })
+      );
+      setSiteWeather(new Map(weatherEntries.filter((e): e is [string, SiteWeather] => e !== null)));
 
       // Track which device IDs are on an active-hold site (for colour-coding)
       const holdDeviceIds = new Set<string>(
@@ -281,6 +345,30 @@ export function MapView() {
         </div>
       )}
 
+      {/* Layer toggles */}
+      <div className="absolute top-3 left-3 z-[1000] flex gap-2">
+        <button
+          onClick={() => { setShowTempLayer((v) => !v); setShowPrecipLayer(false); }}
+          className={`px-3 py-1 rounded-full text-xs font-medium border shadow transition-colors ${
+            showTempLayer
+              ? "bg-amber-500 text-white border-amber-600"
+              : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+          }`}
+        >
+          Temp
+        </button>
+        <button
+          onClick={() => { setShowPrecipLayer((v) => !v); setShowTempLayer(false); }}
+          className={`px-3 py-1 rounded-full text-xs font-medium border shadow transition-colors ${
+            showPrecipLayer
+              ? "bg-blue-500 text-white border-blue-600"
+              : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+          }`}
+        >
+          Rain
+        </button>
+      </div>
+
       {/* Refresh button */}
       <div className="absolute top-3 right-3 z-[1000] flex flex-col items-end gap-1">
         <Button type={ButtonType.Tertiary} onClick={load}>
@@ -322,6 +410,40 @@ export function MapView() {
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
+
+        {/* Temperature heatmap layer */}
+        {showTempLayer && sites.map((site) => {
+          const w = siteWeather.get(site.id);
+          if (!w) return null;
+          const colour = tempColour(w.apparent_temp_c);
+          return (
+            <CircleMarker
+              key={`temp-${site.id}`}
+              center={[site.lat, site.lng]}
+              radius={60}
+              pathOptions={{ fillColor: colour, fillOpacity: 0.35, stroke: false }}
+            >
+              <Tooltip>{site.name} — {w.apparent_temp_c}°C apparent</Tooltip>
+            </CircleMarker>
+          );
+        })}
+
+        {/* Precipitation heatmap layer */}
+        {showPrecipLayer && sites.map((site) => {
+          const w = siteWeather.get(site.id);
+          if (!w) return null;
+          const colour = precipColour(w.precipitation_mm);
+          return (
+            <CircleMarker
+              key={`precip-${site.id}`}
+              center={[site.lat, site.lng]}
+              radius={60}
+              pathOptions={{ fillColor: colour, fillOpacity: 0.35, stroke: false }}
+            >
+              <Tooltip>{site.name} — {w.precipitation_mm}mm</Tooltip>
+            </CircleMarker>
+          );
+        })}
 
         {/* Zone polygons */}
         {zones.map((zone) => {

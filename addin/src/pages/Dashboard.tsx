@@ -4,6 +4,7 @@ import { api, API_URL } from "../lib/api.js";
 import type { HoldRecord, SiteWithStatus, GeotabZone } from "../lib/types.js";
 import { SiteCard } from "../components/SiteCard.js";
 import { ZoneRegistration } from "../components/ZoneRegistration.js";
+import { CreateSiteModal } from "../components/CreateSiteModal.js";
 import { useGeotabApi } from "../lib/geotabContext.js";
 import { fetchAllZones } from "../lib/geotabZones.js";
 
@@ -30,6 +31,7 @@ export function Dashboard() {
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
   const [debugInfo, setDebugInfo] = useState<DebugInfo | null>(null);
   const [showDebug, setShowDebug] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -105,6 +107,11 @@ export function Dashboard() {
           </p>
         </div>
         <div className="text-right flex flex-col items-end gap-1">
+          {apiRef.current && (
+            <Button type={ButtonType.Primary} onClick={() => setShowCreateModal(true)}>
+              + Create Site
+            </Button>
+          )}
           <Button type={ButtonType.Tertiary} onClick={load}>
             Refresh
           </Button>
@@ -181,9 +188,23 @@ export function Dashboard() {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {sites.map((site) => (
-          <SiteCard key={site.id} site={site} zone={zones.get(site.geotab_zone_id ?? "")} />
+          <SiteCard
+            key={site.id}
+            site={site}
+            zone={zones.get(site.geotab_zone_id ?? "")}
+            apiRef={apiRef}
+            onRemoved={load}
+          />
         ))}
       </div>
+
+      {showCreateModal && apiRef.current && (
+        <CreateSiteModal
+          geotabApi={apiRef.current}
+          onDone={() => { setShowCreateModal(false); load(); }}
+          onClose={() => setShowCreateModal(false)}
+        />
+      )}
     </div>
   );
 }

@@ -64,5 +64,6 @@ async def fetch_weather(site: dict) -> dict:
         "apparent_temp_c": round(c["apparent_temperature"] * 10) / 10,
         "lightning_probability_pct": lightning_pct,
         "weather_code": c["weather_code"],
+        "precipitation_mm": round(c["precipitation"] * 10) / 10,
         "raw": data,
     }

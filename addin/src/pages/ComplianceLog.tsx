@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Button, ButtonType, Table, MainColumn } from "@geotab/zenith";
 import type { IListColumn } from "@geotab/zenith";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 import { api } from "../lib/api.js";
 import type { HoldRecord } from "../lib/types.js";
 import { useGeotabApi } from "../lib/geotabContext.js";
@@ -103,6 +105,54 @@ export function ComplianceLog() {
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
+  const [exporting, setExporting] = useState(false);
+
+  async function exportPDF() {
+    setExporting(true);
+    try {
+      // Fetch all records (up to 500 per page; paginate if needed)
+      let allHolds: HoldWithSite[] = [];
+      let fetchPage = 0;
+      while (true) {
+        const { items, total } = await api.getHolds(fetchPage, 500);
+        allHolds = allHolds.concat(items as HoldWithSite[]);
+        if (allHolds.length >= total) break;
+        fetchPage++;
+      }
+
+      const doc = new jsPDF({ orientation: "landscape" });
+      const dateStr = new Date().toLocaleDateString();
+
+      doc.setFontSize(16);
+      doc.text("ClearSkies — OSHA Weather Hold Compliance Report", 14, 16);
+      doc.setFontSize(10);
+      doc.text(`Generated: ${dateStr} | Total events: ${allHolds.length}`, 14, 24);
+
+      autoTable(doc, {
+        startY: 30,
+        head: [["Site", "Rule", "Triggered", "Duration", "Vehicles on Site", "Alerts Sent", "Issued By", "Status"]],
+        body: allHolds.map((h) => [
+          h.site_name,
+          RULE_LABELS[h.trigger_rule] ?? h.trigger_rule,
+          new Date(h.triggered_at).toLocaleString(),
+          durationLabel(h),
+          String(h.vehicles_on_site.length),
+          String(h.notifications_sent?.filter((n) => n.message_type === "hold").length ?? 0),
+          h.issued_by,
+          h.all_clear_at ? "Cleared" : "Active",
+        ]),
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [30, 58, 138] },
+      });
+
+      const fileName = `clearskies-compliance-${new Date().toISOString().slice(0, 10)}.pdf`;
+      doc.save(fileName);
+    } catch (err) {
+      alert(`Export failed: ${err}`);
+    } finally {
+      setExporting(false);
+    }
+  }
 
   useEffect(() => {
     if (!session) return;
@@ -126,11 +176,16 @@ export function ComplianceLog() {
 
   return (
     <div className="p-4 space-y-4">
-      <div>
-        <h1 className="text-xl font-bold text-gray-900">Compliance Log</h1>
-        <p className="text-sm text-gray-500">
-          Full OSHA weather hold history — {totalCount} event(s) recorded
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-bold text-gray-900">Compliance Log</h1>
+          <p className="text-sm text-gray-500">
+            Full OSHA weather hold history — {totalCount} event(s) recorded
+          </p>
+        </div>
+        <Button type={ButtonType.Secondary} onClick={exportPDF} disabled={exporting || loading}>
+          {exporting ? "Exporting…" : "Export PDF"}
+        </Button>
       </div>
 
       {error && (

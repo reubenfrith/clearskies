@@ -2,7 +2,6 @@ fastapi
 uvicorn[standard]
 asyncpg
 httpx
-twilio
 apscheduler
 python-dotenv
 pydantic

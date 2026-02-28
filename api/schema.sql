@@ -47,20 +47,26 @@ create index if not exists holds_log_site_active_idx
   where all_clear_at is null;
 
 -- ─── notification_log ─────────────────────────────────────────────────────────
--- One row per SMS sent — both hold alerts and all-clear alerts.
+-- One row per message sent — both hold alerts and all-clear alerts.
 create table if not exists notification_log (
-  id            uuid primary key default gen_random_uuid(),
-  hold_id       uuid not null references holds_log(id) on delete cascade,
-  driver_name   text,
-  phone_number  text not null,
-  message_type  text not null check (message_type in ('hold', 'all_clear')),
-  sent_at       timestamptz not null,
-  twilio_sid    text,
-  status        text,
-  created_at    timestamptz not null default now()
+  id                uuid primary key default gen_random_uuid(),
+  hold_id           uuid not null references holds_log(id) on delete cascade,
+  driver_name       text,
+  phone_number      text,
+  geotab_device_id  text,
+  message_type      text not null check (message_type in ('hold', 'all_clear')),
+  sent_at           timestamptz not null,
+  twilio_sid        text,
+  status            text,
+  created_at        timestamptz not null default now()
 );
 
-comment on table notification_log is 'Record of every SMS dispatched by ClearSkies (hold alerts and all-clears).';
+comment on table notification_log is 'Record of every message dispatched by ClearSkies (hold alerts and all-clears).';
+
+-- Migration (run once against existing Railway DB):
+-- ALTER TABLE notification_log
+--   ALTER COLUMN phone_number DROP NOT NULL,
+--   ADD COLUMN IF NOT EXISTS geotab_device_id TEXT;
 
 create index if not exists notification_log_hold_idx on notification_log (hold_id);
 
