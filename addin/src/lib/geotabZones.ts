@@ -69,11 +69,18 @@ export async function createGeotabZone(
 
 /**
  * Soft-deactivate a zone in MyGeotab by setting activeTo to a past date.
+ * Fetches the full entity first because Geotab's Set requires a complete object.
  */
 export async function deactivateGeotabZone(api: GeotabApi, zoneId: string): Promise<void> {
+  const results = await callGeotab<GeotabZone[]>(api, "Get", {
+    typeName: "Zone",
+    search: { id: zoneId },
+  });
+  const zone = results?.[0];
+  if (!zone) return;
   await callGeotab<unknown>(api, "Set", {
     typeName: "Zone",
-    entity: { id: zoneId, activeTo: "1986-01-01T00:00:00.000Z" },
+    entity: { ...zone, activeTo: "1986-01-01T00:00:00.000Z" },
   });
 }
 
