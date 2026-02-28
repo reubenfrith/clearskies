@@ -33,6 +33,21 @@ function unwrapEntities<T>(result: GeotabEntityArray<T> | T[]): T[] {
 /**
  * Create a new circular zone in MyGeotab and return its id.
  */
+/** Generate a polygon approximating a circle (Geotab requires ≥3 points). */
+function circlePoints(
+  lat: number,
+  lng: number,
+  radiusMetres: number,
+  steps = 16
+): { x: number; y: number }[] {
+  const dLat = radiusMetres / 111_111;
+  const dLng = radiusMetres / (111_111 * Math.cos((lat * Math.PI) / 180));
+  return Array.from({ length: steps }, (_, i) => {
+    const angle = (2 * Math.PI * i) / steps;
+    return { x: lng + dLng * Math.cos(angle), y: lat + dLat * Math.sin(angle) };
+  });
+}
+
 export async function createGeotabZone(
   api: GeotabApi,
   opts: { name: string; address?: string; lat: number; lng: number; radiusMetres: number }
@@ -46,7 +61,7 @@ export async function createGeotabZone(
       activeFrom: now,
       zoneTypes: [{ id: "ZoneTypeCustomerId" }],
       groups: [{ id: "GroupCompanyId" }],
-      points: [{ x: opts.lng, y: opts.lat, z: 0, radius: opts.radiusMetres }],
+      points: circlePoints(opts.lat, opts.lng, opts.radiusMetres),
     },
   });
   return result;
