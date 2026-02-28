@@ -9,12 +9,22 @@ interface Props {
   onSiteAdded: () => void;
 }
 
-function zoneCentroid(zone: GeotabZone): { lat: number; lng: number } {
+function zoneCentroid(zone: GeotabZone): { lat: number; lng: number; radius_m: number } {
   const pts = zone.points;
-  return {
-    lat: pts.reduce((s, p) => s + p.y, 0) / pts.length,
-    lng: pts.reduce((s, p) => s + p.x, 0) / pts.length,
-  };
+  const lat = pts.reduce((s, p) => s + p.y, 0) / pts.length;
+  const lng = pts.reduce((s, p) => s + p.x, 0) / pts.length;
+  // Estimate radius as max distance from centroid to any point (in metres).
+  const radius_m = Math.max(
+    200,
+    Math.round(
+      Math.max(...pts.map((p) => {
+        const dLat = (p.y - lat) * 111_111;
+        const dLng = (p.x - lng) * 111_111 * Math.cos((lat * Math.PI) / 180);
+        return Math.sqrt(dLat * dLat + dLng * dLng);
+      }))
+    )
+  );
+  return { lat, lng, radius_m };
 }
 
 export function ZoneRegistration({ zones, sites, onSiteAdded }: Props) {
@@ -30,13 +40,14 @@ export function ZoneRegistration({ zones, sites, onSiteAdded }: Props) {
     setAdding(zone.id);
     setError(null);
     try {
-      const { lat, lng } = zoneCentroid(zone);
+      const { lat, lng, radius_m } = zoneCentroid(zone);
       await api.createSite({
         name: zone.name,
         address: zone.comment ?? undefined,
         lat,
         lng,
         geotab_zone_id: zone.id,
+        radius_m,
       });
       onSiteAdded();
     } catch (err) {
