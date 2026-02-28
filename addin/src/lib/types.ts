@@ -54,12 +54,15 @@ export interface HoldRecord {
 }
 
 export interface NotificationRecord {
+  id: string;
   driver_name: string | null;
   phone_number: string | null;
   geotab_device_id: string | null;
-  message_type: "hold" | "all_clear";
+  message_type: "hold" | "all_clear" | "custom";
   sent_at: string;
   twilio_sid: string | null;
+  geotab_message_id: string | null;
+  message_body: string | null;
   status: string;
 }
 

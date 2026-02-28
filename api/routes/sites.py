@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from database import get_pool, serialize_row, serialize_rows
+from polling.alerts import send_geotab_message
 
 router = APIRouter()
 
@@ -68,3 +69,32 @@ async def get_site(site_id: str, pool=Depends(get_pool)):
     if not row:
         raise HTTPException(status_code=404, detail="Site not found")
     return serialize_row(row)
+
+
+class CustomNotify(BaseModel):
+    message: str
+    device_ids: list[str]
+
+
+@router.post("/sites/{site_id}/notify")
+async def send_custom_notification(site_id: str, body: CustomNotify, pool=Depends(get_pool)):
+    """Send a custom message to specific devices and log to notification_log."""
+    results = []
+    for device_id in body.device_ids:
+        try:
+            msg_id = await send_geotab_message(device_id, body.message)
+            status = "sent"
+        except Exception as e:
+            msg_id = None
+            status = f"failed: {e}"
+        results.append({"device_id": device_id, "status": status, "geotab_message_id": msg_id})
+        async with pool.acquire() as conn:
+            await conn.execute(
+                """
+                INSERT INTO notification_log
+                  (site_id, geotab_device_id, message_body, message_type, sent_at, status, geotab_message_id)
+                VALUES ($1::uuid, $2, $3, 'custom', now(), $4, $5)
+                """,
+                site_id, device_id, body.message, status, msg_id,
+            )
+    return results

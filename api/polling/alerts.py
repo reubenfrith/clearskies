@@ -10,7 +10,7 @@ from polling.thresholds import RULE_LABELS
 logger = logging.getLogger(__name__)
 
 
-async def _send_geotab_message(device_id: str, message: str) -> str:
+async def send_geotab_message(device_id: str, message: str) -> str:
     """Send a TextMessage to a device via the Geotab API; returns the new message id."""
     session = await _get_session()
     creds = {
@@ -40,16 +40,19 @@ async def _log_notification(pool, data: dict) -> None:
         await conn.execute(
             """
             INSERT INTO notification_log
-              (hold_id, driver_name, phone_number, geotab_device_id, message_type, sent_at, status)
-            VALUES ($1::uuid, $2, $3, $4, $5, $6, $7)
+              (hold_id, driver_name, phone_number, geotab_device_id, message_type,
+               sent_at, status, geotab_message_id, message_body)
+            VALUES ($1::uuid, $2, $3, $4, $5, $6, $7, $8, $9)
             """,
-            data["hold_id"],
+            data.get("hold_id"),
             data.get("driver_name"),
             data.get("phone_number"),
             data.get("geotab_device_id"),
             data["message_type"],
             data["sent_at"],
             data.get("status"),
+            data.get("geotab_message_id"),
+            data.get("message_body"),
         )
 
 
@@ -86,23 +89,29 @@ async def send_hold_alerts(
         )
 
         try:
-            msg_id = await _send_geotab_message(v["device_id"], body)
-            rec = {
-                "driver_name": v.get("driver_name"),
-                "phone_number": v.get("phone_number"),
-                "geotab_device_id": v["device_id"],
-                "message_type": "hold",
-                "sent_at": datetime.now(timezone.utc).isoformat(),
-                "status": "sent",
-            }
-            await _log_notification(pool, {"hold_id": hold_id, **rec})
-            results.append(rec)
+            msg_id = await send_geotab_message(v["device_id"], body)
+            status = "sent"
             logger.info(
                 f"[Alert] Hold sent to {v.get('driver_name') or v['device_name']} "
                 f"(device {v['device_id']}) \u2014 msg {msg_id}"
             )
         except Exception as err:
+            msg_id = None
+            status = f"failed: {err}"
             logger.error(f"[Alert] Failed to send hold to device {v['device_id']}: {err}")
+
+        rec = {
+            "driver_name": v.get("driver_name"),
+            "phone_number": v.get("phone_number"),
+            "geotab_device_id": v["device_id"],
+            "message_type": "hold",
+            "sent_at": datetime.now(timezone.utc).isoformat(),
+            "status": status,
+            "geotab_message_id": msg_id,
+            "message_body": body,
+        }
+        await _log_notification(pool, {"hold_id": hold_id, **rec})
+        results.append(rec)
 
     return results
 
@@ -128,22 +137,28 @@ async def send_all_clear_alerts(
         )
 
         try:
-            msg_id = await _send_geotab_message(v["device_id"], body)
-            rec = {
-                "driver_name": v.get("driver_name"),
-                "phone_number": v.get("phone_number"),
-                "geotab_device_id": v["device_id"],
-                "message_type": "all_clear",
-                "sent_at": datetime.now(timezone.utc).isoformat(),
-                "status": "sent",
-            }
-            await _log_notification(pool, {"hold_id": hold_id, **rec})
-            results.append(rec)
+            msg_id = await send_geotab_message(v["device_id"], body)
+            status = "sent"
             logger.info(
                 f"[Alert] All-clear sent to {v.get('driver_name') or v['device_name']} "
                 f"(device {v['device_id']}) \u2014 msg {msg_id}"
             )
         except Exception as err:
+            msg_id = None
+            status = f"failed: {err}"
             logger.error(f"[Alert] Failed to send all-clear to device {v['device_id']}: {err}")
+
+        rec = {
+            "driver_name": v.get("driver_name"),
+            "phone_number": v.get("phone_number"),
+            "geotab_device_id": v["device_id"],
+            "message_type": "all_clear",
+            "sent_at": datetime.now(timezone.utc).isoformat(),
+            "status": status,
+            "geotab_message_id": msg_id,
+            "message_body": body,
+        }
+        await _log_notification(pool, {"hold_id": hold_id, **rec})
+        results.append(rec)
 
     return results

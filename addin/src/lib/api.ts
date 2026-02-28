@@ -76,8 +76,18 @@ export const api = {
     apiFetch<HoldRecord>(`/api/holds/${holdId}/clear`, { method: "PATCH" }),
 
   getLogs: (page = 0, pageSize = 50) =>
-    apiFetch<PagedResponse<NotificationRecord & { site_name: string; trigger_rule: string }>>(
+    apiFetch<PagedResponse<NotificationRecord & { site_name: string; trigger_rule: string | null }>>(
       `/api/logs?page=${page}&page_size=${pageSize}`
+    ),
+
+  sendCustomMessage: (siteId: string, data: { message: string; device_ids: string[] }) =>
+    apiFetch<{ device_id: string; status: string; geotab_message_id: string | null }[]>(
+      `/api/sites/${siteId}/notify`, { method: "POST", body: JSON.stringify(data) }
+    ),
+
+  getSiteLogs: (siteId: string, pageSize = 20) =>
+    apiFetch<PagedResponse<NotificationRecord & { site_name: string; trigger_rule: string | null }>>(
+      `/api/logs?site_id=${siteId}&page_size=${pageSize}`
     ),
 
   triggerPoll: () =>

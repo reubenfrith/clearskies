@@ -51,26 +51,37 @@ create index if not exists holds_log_site_active_idx
   where all_clear_at is null;
 
 -- ─── notification_log ─────────────────────────────────────────────────────────
--- One row per message sent — both hold alerts and all-clear alerts.
+-- One row per message sent — hold alerts, all-clear alerts, and custom messages.
 create table if not exists notification_log (
   id                uuid primary key default gen_random_uuid(),
-  hold_id           uuid not null references holds_log(id) on delete cascade,
+  hold_id           uuid references holds_log(id) on delete cascade,  -- nullable for custom messages
+  site_id           uuid references sites(id),
   driver_name       text,
   phone_number      text,
   geotab_device_id  text,
-  message_type      text not null check (message_type in ('hold', 'all_clear')),
+  message_type      text not null check (message_type in ('hold', 'all_clear', 'custom')),
   sent_at           timestamptz not null,
   twilio_sid        text,
+  geotab_message_id text,
+  message_body      text,
   status            text,
   created_at        timestamptz not null default now()
 );
 
-comment on table notification_log is 'Record of every message dispatched by ClearSkies (hold alerts and all-clears).';
+comment on table notification_log is 'Record of every message dispatched by ClearSkies (hold alerts, all-clears, and custom messages).';
 
 -- Migration (run once against existing Railway DB):
+-- ALTER TABLE notification_log ALTER COLUMN hold_id DROP NOT NULL;
 -- ALTER TABLE notification_log
 --   ALTER COLUMN phone_number DROP NOT NULL,
---   ADD COLUMN IF NOT EXISTS geotab_device_id TEXT;
+--   ADD COLUMN IF NOT EXISTS geotab_device_id TEXT,
+--   ADD COLUMN IF NOT EXISTS geotab_message_id TEXT,
+--   ADD COLUMN IF NOT EXISTS message_body TEXT,
+--   ADD COLUMN IF NOT EXISTS site_id UUID REFERENCES sites(id);
+-- ALTER TABLE notification_log DROP CONSTRAINT IF EXISTS notification_log_message_type_check;
+-- ALTER TABLE notification_log
+--   ADD CONSTRAINT notification_log_message_type_check
+--   CHECK (message_type IN ('hold', 'all_clear', 'custom'));
 
 create index if not exists notification_log_hold_idx on notification_log (hold_id);
 

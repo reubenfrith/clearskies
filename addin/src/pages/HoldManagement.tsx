@@ -2,11 +2,12 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button, ButtonType, Card } from "@geotab/zenith";
 import { api } from "../lib/api.js";
-import type { Site, HoldRecord } from "../lib/types.js";
+import type { Site, HoldRecord, NotificationRecord } from "../lib/types.js";
 import { WeatherBadge } from "../components/WeatherBadge.js";
 import { CountdownTimer } from "../components/CountdownTimer.js";
 import { VehicleList } from "../components/VehicleList.js";
 import { useGeotabApi } from "../lib/geotabContext.js";
+import { SendMessageModal } from "../components/SendMessageModal.js";
 
 // ─── Nearby data ──────────────────────────────────────────────────────────────
 
@@ -14,7 +15,7 @@ const NEARBY_RADIUS_FALLBACK_M = 1000;
 const RECENT_MINS = 60;
 const ZONE_HISTORY_HOURS = 2;
 
-interface NearbyVehicle {
+export interface NearbyVehicle {
   deviceId: string;
   deviceName: string;
   isAsset: boolean;
@@ -184,21 +185,25 @@ export function HoldManagement() {
   const [nearbyDrivers, setNearbyDrivers] = useState<NearbyDriver[]>([]);
   const [nearbyLoading, setNearbyLoading] = useState(false);
   const [nearbyRefreshedAt, setNearbyRefreshedAt] = useState<Date | null>(null);
+  const [showSendModal, setShowSendModal] = useState(false);
+  const [siteNotifications, setSiteNotifications] = useState<(NotificationRecord & { site_name: string; trigger_rule: string | null })[]>([]);
 
   const loadNearby = useCallback(async (siteData: Site) => {
     if (!apiRef.current) return;
     setNearbyLoading(true);
     try {
-      const [vehicles, history, drivers] = await Promise.all([
+      const [vehicles, history, drivers, logs] = await Promise.all([
         fetchNearbyVehicles(apiRef.current, siteData),
         siteData.geotab_zone_id
           ? fetchZoneHistory(apiRef.current, siteData.geotab_zone_id)
           : Promise.resolve([] as ZoneVisit[]),
         fetchNearbyDrivers(apiRef.current, siteData),
+        api.getSiteLogs(siteData.id),
       ]);
       setNearbyVehicles(vehicles);
       setZoneHistory(history);
       setNearbyDrivers(drivers);
+      setSiteNotifications(logs.items);
       setNearbyRefreshedAt(new Date());
     } catch {
       setNearbyVehicles([]);
@@ -343,7 +348,15 @@ export function HoldManagement() {
                   </tbody>
                 </table>
               )}
-              <div className="mt-3 flex justify-end">
+              <div className="mt-3 flex justify-end gap-3">
+                {nearbyVehicles.length > 0 && (
+                  <button
+                    onClick={() => setShowSendModal(true)}
+                    className="text-xs text-blue-600 hover:text-blue-800"
+                  >
+                    📨 Send Message
+                  </button>
+                )}
                 <button
                   onClick={() => site && loadNearby(site)}
                   disabled={nearbyLoading}
@@ -394,6 +407,75 @@ export function HoldManagement() {
                         </td>
                       </tr>
                     ))}
+                  </tbody>
+                </table>
+              )}
+            </Card.Content>
+          </Card>
+
+          {/* Message history */}
+          <Card title="Message history — last 20" fullWidth>
+            <Card.Content>
+              {siteNotifications.length === 0 ? (
+                <p className="text-sm text-gray-500 italic">No messages sent for this site yet.</p>
+              ) : (
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-xs text-gray-500 border-b">
+                      <th className="pb-1 font-medium">Device</th>
+                      <th className="pb-1 font-medium">Type</th>
+                      <th className="pb-1 font-medium">Status</th>
+                      <th className="pb-1 font-medium">Preview</th>
+                      <th className="pb-1 font-medium text-right">Time</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {siteNotifications.map((n) => {
+                      const sent = n.status === "sent";
+                      const preview = n.message_body
+                        ? n.message_body.slice(0, 40) + (n.message_body.length > 40 ? "…" : "")
+                        : "(template)";
+                      const typeBadge =
+                        n.message_type === "hold"
+                          ? "bg-red-100 text-red-700"
+                          : n.message_type === "all_clear"
+                          ? "bg-green-100 text-green-700"
+                          : "bg-blue-100 text-blue-700";
+                      const typeLabel =
+                        n.message_type === "hold"
+                          ? "Hold"
+                          : n.message_type === "all_clear"
+                          ? "All-clear"
+                          : "Custom";
+                      return (
+                        <tr key={n.id} className="border-b border-gray-50 last:border-0">
+                          <td className="py-1.5 text-gray-800 text-xs">
+                            {n.driver_name ?? n.geotab_device_id ?? "—"}
+                          </td>
+                          <td className="py-1.5">
+                            <span className={`inline-block px-1.5 py-0.5 rounded text-xs font-medium ${typeBadge}`}>
+                              {typeLabel}
+                            </span>
+                          </td>
+                          <td className="py-1.5">
+                            <span
+                              title={!sent ? n.status : undefined}
+                              className={`inline-block px-1.5 py-0.5 rounded text-xs font-medium ${
+                                sent
+                                  ? "bg-green-100 text-green-700"
+                                  : "bg-red-100 text-red-700 cursor-help"
+                              }`}
+                            >
+                              {sent ? "✓ Sent" : "✗ Failed"}
+                            </span>
+                          </td>
+                          <td className="py-1.5 text-gray-500 text-xs max-w-[160px] truncate">{preview}</td>
+                          <td className="py-1.5 text-right text-gray-400 text-xs">
+                            {new Date(n.sent_at).toLocaleTimeString()}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               )}
@@ -498,6 +580,18 @@ export function HoldManagement() {
             </Button>
           </div>
         </div>
+      )}
+
+      {showSendModal && site && (
+        <SendMessageModal
+          siteId={site.id}
+          siteName={site.name}
+          vehicles={nearbyVehicles}
+          onClose={() => setShowSendModal(false)}
+          onSent={() => {
+            api.getSiteLogs(site.id).then((r) => setSiteNotifications(r.items)).catch(() => {});
+          }}
+        />
       )}
     </div>
   );
