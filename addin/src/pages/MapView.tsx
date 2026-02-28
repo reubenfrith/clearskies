@@ -345,39 +345,74 @@ export function MapView() {
         </div>
       )}
 
-      {/* Layer toggles */}
-      <div className="absolute top-3 left-3 z-[1000] flex gap-2">
-        <button
-          onClick={() => { setShowTempLayer((v) => !v); setShowPrecipLayer(false); }}
-          className={`px-3 py-1 rounded-full text-xs font-medium border shadow transition-colors ${
-            showTempLayer
-              ? "bg-amber-500 text-white border-amber-600"
-              : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-          }`}
-        >
-          Temp
-        </button>
-        <button
-          onClick={() => { setShowPrecipLayer((v) => !v); setShowTempLayer(false); }}
-          className={`px-3 py-1 rounded-full text-xs font-medium border shadow transition-colors ${
-            showPrecipLayer
-              ? "bg-blue-500 text-white border-blue-600"
-              : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-          }`}
-        >
-          Rain
-        </button>
-      </div>
-
-      {/* Refresh button */}
-      <div className="absolute top-3 right-3 z-[1000] flex flex-col items-end gap-1">
-        <Button type={ButtonType.Tertiary} onClick={load}>
-          Refresh
-        </Button>
+      {/* Top-right controls: layer toggles + refresh */}
+      <div className="absolute top-3 right-3 z-[1000] flex flex-col items-end gap-2">
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={() => { setShowTempLayer((v) => !v); setShowPrecipLayer(false); }}
+            className={`px-3 py-1 rounded-full text-xs font-medium border shadow transition-colors ${
+              showTempLayer
+                ? "bg-amber-500 text-white border-amber-600"
+                : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+            }`}
+          >
+            🌡 Temp
+          </button>
+          <button
+            onClick={() => { setShowPrecipLayer((v) => !v); setShowTempLayer(false); }}
+            className={`px-3 py-1 rounded-full text-xs font-medium border shadow transition-colors ${
+              showPrecipLayer
+                ? "bg-blue-500 text-white border-blue-600"
+                : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+            }`}
+          >
+            🌧 Rain
+          </button>
+          <Button type={ButtonType.Tertiary} onClick={load}>
+            Refresh
+          </Button>
+        </div>
         <span className="text-xs text-gray-500 bg-white/80 px-2 py-0.5 rounded">
           {lastRefresh.toLocaleTimeString()}
         </span>
       </div>
+
+      {/* Heatmap legend */}
+      {(showTempLayer || showPrecipLayer) && (
+        <div className="absolute bottom-8 right-3 z-[1000] bg-white/95 border border-gray-200 rounded-lg shadow-md px-3 py-2.5 min-w-[140px]">
+          {showTempLayer && (
+            <>
+              <p className="text-xs font-semibold text-gray-700 mb-1.5">Apparent Temp</p>
+              {[
+                { colour: "rgb(96,165,250)",  label: "≤ 0°C" },
+                { colour: "rgb(163,230,53)",  label: "15°C" },
+                { colour: "rgb(251,191,36)",  label: "28°C" },
+                { colour: "rgb(239,68,68)",   label: "≥ 38°C" },
+              ].map(({ colour, label }) => (
+                <div key={label} className="flex items-center gap-2 mb-1">
+                  <span className="w-3.5 h-3.5 rounded-full flex-shrink-0 border border-black/10" style={{ background: colour }} />
+                  <span className="text-xs text-gray-600">{label}</span>
+                </div>
+              ))}
+            </>
+          )}
+          {showPrecipLayer && (
+            <>
+              <p className="text-xs font-semibold text-gray-700 mb-1.5">Precipitation</p>
+              {[
+                { colour: "rgb(224,242,254)", label: "0 mm (dry)" },
+                { colour: "rgb(56,189,248)",  label: "5 mm" },
+                { colour: "rgb(30,58,138)",   label: "≥ 25 mm" },
+              ].map(({ colour, label }) => (
+                <div key={label} className="flex items-center gap-2 mb-1">
+                  <span className="w-3.5 h-3.5 rounded-full flex-shrink-0 border border-black/10" style={{ background: colour }} />
+                  <span className="text-xs text-gray-600">{label}</span>
+                </div>
+              ))}
+            </>
+          )}
+        </div>
+      )}
 
       {/* Error */}
       {error && (
