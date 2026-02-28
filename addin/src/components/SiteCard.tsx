@@ -46,7 +46,7 @@ export function SiteCard({ site, zone, apiRef, onRemoved }: Props) {
     try {
       await api.deactivateSite(site.id);
       if (apiRef?.current && site.geotab_zone_id) {
-        await deactivateGeotabZone(apiRef.current, site.geotab_zone_id).catch(() => {});
+        await deactivateGeotabZone(apiRef.current, site.geotab_zone_id);
       }
       onRemoved?.();
     } catch (err) {

@@ -173,18 +173,18 @@ function tempColour(c: number): string {
   return "rgb(239,68,68)";
 }
 
-function precipColour(mm: number): string {
-  // 0 very light → 5mm mid → ≥25mm dark blue
+function precipColour(pct: number): string {
+  // 0% dry → 40% moderate → ≥80% heavy chance
   const stops: [number, [number, number, number]][] = [
     [0,  [224, 242, 254]],
-    [5,  [56, 189, 248]],
-    [25, [30, 58, 138]],
+    [40, [56, 189, 248]],
+    [80, [30, 58, 138]],
   ];
-  if (mm <= 0) return `rgb(${stops[0][1].join(",")})`;
-  if (mm >= stops[stops.length - 1][0]) return `rgb(${stops[stops.length - 1][1].join(",")})`;
+  if (pct <= 0) return `rgb(${stops[0][1].join(",")})`;
+  if (pct >= stops[stops.length - 1][0]) return `rgb(${stops[stops.length - 1][1].join(",")})`;
   for (let i = 0; i < stops.length - 1; i++) {
-    if (mm <= stops[i + 1][0]) {
-      const t = (mm - stops[i][0]) / (stops[i + 1][0] - stops[i][0]);
+    if (pct <= stops[i + 1][0]) {
+      const t = (pct - stops[i][0]) / (stops[i + 1][0] - stops[i][0]);
       return lerpColour(stops[i][1], stops[i + 1][1], t);
     }
   }
@@ -398,11 +398,11 @@ export function MapView() {
           )}
           {showPrecipLayer && (
             <>
-              <p className="text-xs font-semibold text-gray-700 mb-1.5">Precipitation</p>
+              <p className="text-xs font-semibold text-gray-700 mb-1.5">Rain Probability</p>
               {[
-                { colour: "rgb(224,242,254)", label: "0 mm (dry)" },
-                { colour: "rgb(56,189,248)",  label: "5 mm" },
-                { colour: "rgb(30,58,138)",   label: "≥ 25 mm" },
+                { colour: "rgb(224,242,254)", label: "0% (dry)" },
+                { colour: "rgb(56,189,248)",  label: "40%" },
+                { colour: "rgb(30,58,138)",   label: "≥ 80%" },
               ].map(({ colour, label }) => (
                 <div key={label} className="flex items-center gap-2 mb-1">
                   <span className="w-3.5 h-3.5 rounded-full flex-shrink-0 border border-black/10" style={{ background: colour }} />
@@ -463,11 +463,11 @@ export function MapView() {
           );
         })}
 
-        {/* Precipitation heatmap layer */}
+        {/* Precipitation probability heatmap layer */}
         {showPrecipLayer && sites.map((site) => {
           const w = siteWeather.get(site.id);
           if (!w) return null;
-          const colour = precipColour(w.precipitation_mm);
+          const colour = precipColour(w.precipitation_probability_pct);
           return (
             <CircleMarker
               key={`precip-${site.id}`}
@@ -475,7 +475,7 @@ export function MapView() {
               radius={60}
               pathOptions={{ fillColor: colour, fillOpacity: 0.35, stroke: false }}
             >
-              <Tooltip>{site.name} — {w.precipitation_mm}mm</Tooltip>
+              <Tooltip>{site.name} — {w.precipitation_probability_pct}% chance of rain</Tooltip>
             </CircleMarker>
           );
         })}
