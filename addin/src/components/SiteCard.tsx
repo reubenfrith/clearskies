@@ -96,11 +96,17 @@ export function SiteCard({ site, zone, apiRef, onRemoved }: Props) {
 
       {/* Weather summary */}
       {weather && (
-        <div className="grid grid-cols-3 gap-2 text-center bg-gray-50 rounded p-2">
-          <Stat label="Wind Gust" value={`${weather.wind_gust_mph} mph`} tooltip="Maximum wind gust from Open-Meteo (mph)" />
-          <Stat label="Lightning" value={`${weather.lightning_probability_pct}%`} tooltip="CAPE-based probability of lightning in the area" />
-          <Stat label="Heat" value={`${weather.apparent_temp_c}°C`} tooltip="Apparent (feels-like) temperature accounting for humidity" />
-        </div>
+        weather.wind_gust_mph != null ? (
+          <div className="grid grid-cols-3 gap-2 text-center bg-gray-50 rounded p-2">
+            <Stat label="Wind Gust" value={`${weather.wind_gust_mph} mph`} tooltip="Maximum wind gust from Open-Meteo (mph)" />
+            <Stat label="Lightning" value={`${weather.lightning_probability_pct}%`} tooltip="CAPE-based probability of lightning in the area" />
+            <Stat label="Heat" value={`${weather.apparent_temp_c}°C`} tooltip="Apparent (feels-like) temperature accounting for humidity" />
+          </div>
+        ) : (
+          <div className="bg-gray-50 rounded px-3 py-2 text-xs text-gray-500">
+            ⚠️ Manual trigger
+          </div>
+        )
       )}
 
       {/* Active hold info */}
