@@ -1,8 +1,12 @@
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from database import get_pool, serialize_row, serialize_rows
 from polling.alerts import send_geotab_message
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -88,13 +92,16 @@ async def send_custom_notification(site_id: str, body: CustomNotify, pool=Depend
             msg_id = None
             status = f"failed: {e}"
         results.append({"device_id": device_id, "status": status, "geotab_message_id": msg_id})
-        async with pool.acquire() as conn:
-            await conn.execute(
-                """
-                INSERT INTO notification_log
-                  (site_id, geotab_device_id, message_body, message_type, sent_at, status, geotab_message_id)
-                VALUES ($1::uuid, $2, $3, 'custom', now(), $4, $5)
-                """,
-                site_id, device_id, body.message, status, msg_id,
-            )
+        try:
+            async with pool.acquire() as conn:
+                await conn.execute(
+                    """
+                    INSERT INTO notification_log
+                      (site_id, geotab_device_id, message_body, message_type, sent_at, status, geotab_message_id)
+                    VALUES ($1::uuid, $2, $3, 'custom', now(), $4, $5)
+                    """,
+                    site_id, device_id, body.message, status, msg_id,
+                )
+        except Exception as db_err:
+            logger.error(f"[Notify] Failed to log notification for device {device_id}: {db_err}")
     return results

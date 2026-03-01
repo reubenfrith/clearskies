@@ -47,7 +47,12 @@ function geotabGet<T>(api: { call: Function }, typeName: string, search?: object
   return new Promise((resolve) => {
     const params: Record<string, unknown> = { typeName };
     if (search) params.search = search;
-    api.call("Get", params, (res: T[]) => resolve(res ?? []), () => resolve([]));
+    // api.call may also return a Promise (some Geotab versions). Attach .catch so any
+    // rejection is handled here rather than surfacing as an unhandled rejection.
+    const maybePromise = api.call("Get", params, (res: T[]) => resolve(res ?? []), () => resolve([]));
+    if (maybePromise && typeof maybePromise.catch === "function") {
+      maybePromise.catch(() => resolve([]));
+    }
   });
 }
 
