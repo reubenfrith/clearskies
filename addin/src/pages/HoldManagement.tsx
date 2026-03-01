@@ -642,8 +642,8 @@ export function HoldManagement() {
             )}
           </div>
 
-          {/* Weather snapshot — only shown when data exists (auto-triggered holds) */}
-          {hold.weather_snapshot?.wind_speed_mph != null && (
+          {/* Weather snapshot */}
+          {hold.weather_snapshot?.wind_speed_mph != null ? (
             <Card title="Weather at time of hold" fullWidth>
               <Card.Content>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -654,6 +654,10 @@ export function HoldManagement() {
                 </div>
               </Card.Content>
             </Card>
+          ) : (
+            <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 text-sm text-gray-600">
+              ⚠️ Manual trigger — no weather snapshot recorded
+            </div>
           )}
 
           {/* Vehicles on site */}
