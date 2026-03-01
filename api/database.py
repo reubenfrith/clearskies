@@ -1,3 +1,4 @@
+import json
 import os
 import uuid
 from datetime import datetime
@@ -8,7 +9,17 @@ from fastapi import Request
 
 async def create_pool() -> asyncpg.Pool:
     url = os.environ["DATABASE_URL"]
-    return await asyncpg.create_pool(url)
+
+    async def _init(conn: asyncpg.Connection) -> None:
+        await conn.set_type_codec(
+            "jsonb",
+            schema="pg_catalog",
+            encoder=json.dumps,
+            decoder=json.loads,
+            format="text",
+        )
+
+    return await asyncpg.create_pool(url, init=_init)
 
 
 async def close_pool(pool: asyncpg.Pool) -> None:
