@@ -33,7 +33,7 @@ interface Props {
 const BORDER_COLOR = {
   green: "border-green-400",
   amber: "border-amber-400",
-  red:   "border-red-500",
+  red: "border-red-500",
 };
 
 export function SiteCard({ site, zone, apiRef, onRemoved }: Props) {
@@ -43,7 +43,12 @@ export function SiteCard({ site, zone, apiRef, onRemoved }: Props) {
   const navigate = useNavigate();
 
   async function handleRemove() {
-    if (!confirm(`Remove "${site.name}"? This will deactivate the site and its Geotab zone.`)) return;
+    if (
+      !confirm(
+        `Remove "${site.name}"? This will deactivate the site and its Geotab zone.`,
+      )
+    )
+      return;
     setRemoving(true);
     try {
       await api.deactivateSite(site.id);
@@ -60,56 +65,66 @@ export function SiteCard({ site, zone, apiRef, onRemoved }: Props) {
   }
 
   return (
-    <div className={`bg-white rounded-lg border-l-4 ${border} shadow-sm p-4 flex flex-col gap-3`}>
+    <div
+      className={`bg-white rounded-lg border-l-4 ${border} shadow-sm p-4 flex flex-col gap-3`}
+    >
       {/* Header */}
       <div className="flex items-start justify-between gap-2">
         <div>
           <h3 className="font-semibold text-gray-900">{site.name}</h3>
-          {site.address && <p className="text-xs text-gray-500 mt-0.5">{site.address}</p>}
+          {site.address && (
+            <p className="text-xs text-gray-500 mt-0.5">{site.address}</p>
+          )}
           {zoneTypeLabel(zone?.zoneTypes) && (
-            <Tooltip content="Geotab zone category" position="bottom">
-              <span className="inline-block text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded mt-1 cursor-default">
-                {zoneTypeLabel(zone?.zoneTypes)}
-              </span>
-            </Tooltip>
+            <span className="inline-block text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded mt-1 cursor-default">
+              {zoneTypeLabel(zone?.zoneTypes)}
+            </span>
           )}
           {zone?.comment && (
-            <p className="text-xs text-gray-400 italic mt-0.5">{zone.comment}</p>
+            <p className="text-xs text-gray-400 italic mt-0.5">
+              {zone.comment}
+            </p>
           )}
         </div>
         <div className="flex flex-col items-end gap-1">
-          <WeatherBadge
-            status={site.status}
-            rule={activeHold?.trigger_rule}
-          />
+          <WeatherBadge status={site.status} rule={activeHold?.trigger_rule} />
           {onRemoved && (
-            <Tooltip content="Deactivates this site and sets the Geotab zone's expiry date to stop monitoring">
-              <button
-                onClick={handleRemove}
-                disabled={removing}
-                className="text-xs text-red-500 hover:text-red-700 disabled:opacity-50 mt-1"
-              >
-                {removing ? "Removing…" : "Remove"}
-              </button>
-            </Tooltip>
+            <button
+              onClick={handleRemove}
+              disabled={removing}
+              className="text-xs text-red-500 hover:text-red-700 disabled:opacity-50 mt-1"
+            >
+              {removing ? "Removing…" : "Remove"}
+            </button>
           )}
         </div>
       </div>
 
       {/* Weather summary */}
-      {weather && (
-        weather.wind_gust_mph != null ? (
+      {weather &&
+        (weather.wind_gust_mph != null ? (
           <div className="grid grid-cols-3 gap-2 text-center bg-gray-50 rounded p-2">
-            <Stat label="Wind Gust" value={`${weather.wind_gust_mph} mph`} tooltip="Maximum wind gust from Open-Meteo (mph)" />
-            <Stat label="Lightning" value={`${weather.lightning_probability_pct}%`} tooltip="CAPE-based probability of lightning in the area" />
-            <Stat label="Heat" value={`${weather.apparent_temp_c}°C`} tooltip="Apparent (feels-like) temperature accounting for humidity" />
+            <Stat
+              label="Wind Gust"
+              value={`${weather.wind_gust_mph} mph`}
+              tooltip="Maximum wind gust from Open-Meteo (mph)"
+            />
+            <Stat
+              label="Lightning"
+              value={`${weather.lightning_probability_pct}%`}
+              tooltip="CAPE-based probability of lightning in the area"
+            />
+            <Stat
+              label="Heat"
+              value={`${weather.apparent_temp_c}°C`}
+              tooltip="Apparent (feels-like) temperature accounting for humidity"
+            />
           </div>
         ) : (
           <div className="bg-gray-50 rounded px-3 py-2 text-xs text-gray-500">
             ⚠️ Manual trigger
           </div>
-        )
-      )}
+        ))}
 
       {/* Active hold info */}
       {activeHold && (
@@ -142,8 +157,18 @@ export function SiteCard({ site, zone, apiRef, onRemoved }: Props) {
   );
 }
 
-function Stat({ label, value, tooltip }: { label: string; value: string; tooltip?: string }) {
-  const labelEl = <div className="text-xs text-gray-500 cursor-default">{label}</div>;
+function Stat({
+  label,
+  value,
+  tooltip,
+}: {
+  label: string;
+  value: string;
+  tooltip?: string;
+}) {
+  const labelEl = (
+    <div className="text-xs text-gray-500 cursor-default">{label}</div>
+  );
   return (
     <div>
       {tooltip ? <Tooltip content={tooltip}>{labelEl}</Tooltip> : labelEl}

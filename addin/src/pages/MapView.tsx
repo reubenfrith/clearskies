@@ -349,7 +349,6 @@ export function MapView() {
       {/* Top-right controls: layer toggles + refresh */}
       <div className="absolute top-3 right-3 z-[1000] flex flex-col items-end gap-2">
         <div className="flex items-center gap-1.5">
-          <Tooltip content="Toggle apparent temperature heatmap — blue (cold) → green → amber → red (≥38°C)" position="bottom">
             <button
               onClick={() => { setShowTempLayer((v) => !v); setShowPrecipLayer(false); }}
               className={`px-3 py-1 rounded-full text-xs font-medium border shadow transition-colors ${
@@ -360,8 +359,6 @@ export function MapView() {
             >
               🌡 Temp
             </button>
-          </Tooltip>
-          <Tooltip content="Toggle precipitation probability heatmap — light blue (0%) → dark blue (≥80%)" position="bottom">
             <button
               onClick={() => { setShowPrecipLayer((v) => !v); setShowTempLayer(false); }}
               className={`px-3 py-1 rounded-full text-xs font-medium border shadow transition-colors ${
@@ -372,7 +369,6 @@ export function MapView() {
             >
               🌧 Rain
             </button>
-          </Tooltip>
           <Button type={ButtonType.Tertiary} onClick={load}>
             Refresh
           </Button>
