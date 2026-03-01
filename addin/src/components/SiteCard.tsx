@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import type { GeotabApi } from "../geotab.js";
 import type { SiteWithStatus, GeotabZone } from "../lib/types.js";
 import { WeatherBadge } from "./WeatherBadge.js";
@@ -40,6 +40,7 @@ export function SiteCard({ site, zone, apiRef, onRemoved }: Props) {
   const { activeHold, weather } = site;
   const border = BORDER_COLOR[site.status];
   const [removing, setRemoving] = useState(false);
+  const navigate = useNavigate();
 
   async function handleRemove() {
     if (!confirm(`Remove "${site.name}"? This will deactivate the site and its Geotab zone.`)) return;
@@ -123,12 +124,12 @@ export function SiteCard({ site, zone, apiRef, onRemoved }: Props) {
       )}
 
       {/* Link to hold management */}
-      <Link
-        to={`/holds/${site.id}`}
-        className="zen-link mt-auto"
+      <button
+        onClick={() => navigate(`/holds/${site.id}`)}
+        className="zen-link mt-auto text-left"
       >
         {activeHold ? "Manage hold →" : "View site →"}
-      </Link>
+      </button>
     </div>
   );
 }
