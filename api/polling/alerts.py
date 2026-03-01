@@ -27,7 +27,6 @@ async def send_geotab_message(device_id: str, message: str) -> str:
                 "device": {"id": device_id},
                 "isDirectionToVehicle": True,
                 "messageContent": {"contentType": "Normal", "message": message},
-                "sent": True,
             },
         },
         creds,
