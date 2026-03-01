@@ -49,6 +49,8 @@ export function SiteCard({ site, zone, apiRef, onRemoved }: Props) {
       await api.deactivateSite(site.id);
       if (apiRef?.current && site.geotab_zone_id) {
         await deactivateGeotabZone(apiRef.current, site.geotab_zone_id);
+        // Give Geotab a moment to process the zone expiry before refreshing
+        await new Promise((resolve) => setTimeout(resolve, 2000));
       }
       onRemoved?.();
     } catch (err) {
