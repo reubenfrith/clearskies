@@ -69,8 +69,8 @@ export function ComplianceLog() {
           RULE_LABELS[h.trigger_rule] ?? h.trigger_rule,
           new Date(h.triggered_at).toLocaleString(),
           durationLabel(h),
-          String(h.vehicles_on_site.length),
-          String(h.notifications_sent?.filter((n) => n.message_type === "hold").length ?? 0),
+          String(Array.isArray(h.vehicles_on_site) ? h.vehicles_on_site.length : 0),
+          String(Array.isArray(h.notifications_sent) ? h.notifications_sent.filter((n) => n.message_type === "hold").length : 0),
           h.issued_by,
           h.all_clear_at ? "Cleared" : "Active",
         ]),
@@ -184,12 +184,14 @@ export function ComplianceLog() {
 
                       {/* Vehicles */}
                       <td className="px-4 py-3 text-gray-700">
-                        {h.vehicles_on_site.length}
+                        {Array.isArray(h.vehicles_on_site) ? h.vehicles_on_site.length : 0}
                       </td>
 
                       {/* Alerts sent */}
                       <td className="px-4 py-3 text-gray-700">
-                        {h.notifications_sent?.filter((n) => n.message_type === "hold").length ?? 0}
+                        {Array.isArray(h.notifications_sent)
+                          ? h.notifications_sent.filter((n) => n.message_type === "hold").length
+                          : 0}
                       </td>
 
                       {/* Issued by */}
