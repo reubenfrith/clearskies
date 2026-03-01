@@ -642,17 +642,19 @@ export function HoldManagement() {
             )}
           </div>
 
-          {/* Weather snapshot */}
-          <Card title="Weather at time of hold" fullWidth>
-            <Card.Content>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <Stat label="Wind Speed" value={`${hold.weather_snapshot.wind_speed_mph} mph`} />
-                <Stat label="Wind Gust" value={`${hold.weather_snapshot.wind_gust_mph} mph`} />
-                <Stat label="Lightning" value={`${hold.weather_snapshot.lightning_probability_pct}%`} />
-                <Stat label="Apparent Temp" value={`${hold.weather_snapshot.apparent_temp_c}°C`} />
-              </div>
-            </Card.Content>
-          </Card>
+          {/* Weather snapshot — only shown when data exists (auto-triggered holds) */}
+          {hold.weather_snapshot?.wind_speed_mph != null && (
+            <Card title="Weather at time of hold" fullWidth>
+              <Card.Content>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <Stat label="Wind Speed" value={`${hold.weather_snapshot.wind_speed_mph} mph`} />
+                  <Stat label="Wind Gust" value={`${hold.weather_snapshot.wind_gust_mph} mph`} />
+                  <Stat label="Lightning" value={`${hold.weather_snapshot.lightning_probability_pct}%`} />
+                  <Stat label="Apparent Temp" value={`${hold.weather_snapshot.apparent_temp_c}°C`} />
+                </div>
+              </Card.Content>
+            </Card>
+          )}
 
           {/* Vehicles on site */}
           <Card title={`Vehicles confirmed on site (${hold.vehicles_on_site.length})`} fullWidth>
