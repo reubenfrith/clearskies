@@ -6,7 +6,6 @@ import { api } from "../lib/api.js";
 import { useGeotabApi } from "../lib/geotabContext.js";
 import { fetchAllZones } from "../lib/geotabZones.js";
 import { fetchSiteWeather } from "../lib/weather.js";
-import { Tooltip } from "../components/Tooltip.js";
 import type { SiteWeather } from "../lib/weather.js";
 import type {
   Site,
