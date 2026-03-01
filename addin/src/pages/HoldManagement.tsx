@@ -497,83 +497,6 @@ export function HoldManagement() {
             </Card.Content>
           </Card>
 
-          {/* Message history */}
-          <Card title="Message history — last 20" fullWidth>
-            <Card.Content>
-              {siteNotifications.length === 0 ? (
-                <p className="text-sm text-gray-500 italic">No messages sent for this site yet.</p>
-              ) : (
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="text-left text-xs text-gray-500 border-b">
-                      <th className="pb-1 font-medium">Device</th>
-                      <th className="pb-1 font-medium">
-                        <Tooltip content="hold = triggered alert · all_clear = hold lifted · custom = manually sent">
-                          <span className="cursor-default border-b border-dotted border-gray-400">Type</span>
-                        </Tooltip>
-                      </th>
-                      <th className="pb-1 font-medium">Status</th>
-                      <th className="pb-1 font-medium">
-                        <Tooltip content="First 40 characters of the message body">
-                          <span className="cursor-default border-b border-dotted border-gray-400">Preview</span>
-                        </Tooltip>
-                      </th>
-                      <th className="pb-1 font-medium text-right">Time</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {siteNotifications.map((n) => {
-                      const sent = n.status === "sent";
-                      const preview = n.message_body
-                        ? n.message_body.slice(0, 40) + (n.message_body.length > 40 ? "…" : "")
-                        : "(template)";
-                      const typeBadge =
-                        n.message_type === "hold"
-                          ? "bg-red-100 text-red-700"
-                          : n.message_type === "all_clear"
-                          ? "bg-green-100 text-green-700"
-                          : "bg-blue-100 text-blue-700";
-                      const typeLabel =
-                        n.message_type === "hold"
-                          ? "Hold"
-                          : n.message_type === "all_clear"
-                          ? "All-clear"
-                          : "Custom";
-                      return (
-                        <tr key={n.id} className="border-b border-gray-50 last:border-0">
-                          <td className="py-1.5 text-gray-800 text-xs">
-                            {n.driver_name ?? n.geotab_device_id ?? "—"}
-                          </td>
-                          <td className="py-1.5">
-                            <span className={`inline-block px-1.5 py-0.5 rounded text-xs font-medium ${typeBadge}`}>
-                              {typeLabel}
-                            </span>
-                          </td>
-                          <td className="py-1.5">
-                            <span
-                              title={!sent ? n.status : undefined}
-                              className={`inline-block px-1.5 py-0.5 rounded text-xs font-medium ${
-                                sent
-                                  ? "bg-green-100 text-green-700"
-                                  : "bg-red-100 text-red-700 cursor-help"
-                              }`}
-                            >
-                              {sent ? "✓ Sent" : "✗ Failed"}
-                            </span>
-                          </td>
-                          <td className="py-1.5 text-gray-500 text-xs max-w-[160px] truncate">{preview}</td>
-                          <td className="py-1.5 text-right text-gray-400 text-xs">
-                            {new Date(n.sent_at).toLocaleTimeString()}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              )}
-            </Card.Content>
-          </Card>
-
           {/* Nearby drivers (Geotab Drive app) — only shown if data available */}
           {(nearbyDrivers.length > 0 || nearbyLoading) && (
             <Card
@@ -610,6 +533,83 @@ export function HoldManagement() {
           )}
         </>
       )}
+
+      {/* Message history — always shown regardless of Geotab API availability */}
+      <Card title="Message history — last 20" fullWidth>
+        <Card.Content>
+          {siteNotifications.length === 0 ? (
+            <p className="text-sm text-gray-500 italic">No messages sent for this site yet.</p>
+          ) : (
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-xs text-gray-500 border-b">
+                  <th className="pb-1 font-medium">Device</th>
+                  <th className="pb-1 font-medium">
+                    <Tooltip content="hold = triggered alert · all_clear = hold lifted · custom = manually sent">
+                      <span className="cursor-default border-b border-dotted border-gray-400">Type</span>
+                    </Tooltip>
+                  </th>
+                  <th className="pb-1 font-medium">Status</th>
+                  <th className="pb-1 font-medium">
+                    <Tooltip content="First 40 characters of the message body">
+                      <span className="cursor-default border-b border-dotted border-gray-400">Preview</span>
+                    </Tooltip>
+                  </th>
+                  <th className="pb-1 font-medium text-right">Time</th>
+                </tr>
+              </thead>
+              <tbody>
+                {siteNotifications.map((n) => {
+                  const sent = n.status === "sent";
+                  const preview = n.message_body
+                    ? n.message_body.slice(0, 40) + (n.message_body.length > 40 ? "…" : "")
+                    : "(template)";
+                  const typeBadge =
+                    n.message_type === "hold"
+                      ? "bg-red-100 text-red-700"
+                      : n.message_type === "all_clear"
+                      ? "bg-green-100 text-green-700"
+                      : "bg-blue-100 text-blue-700";
+                  const typeLabel =
+                    n.message_type === "hold"
+                      ? "Hold"
+                      : n.message_type === "all_clear"
+                      ? "All-clear"
+                      : "Custom";
+                  return (
+                    <tr key={n.id} className="border-b border-gray-50 last:border-0">
+                      <td className="py-1.5 text-gray-800 text-xs">
+                        {n.driver_name ?? n.geotab_device_id ?? "—"}
+                      </td>
+                      <td className="py-1.5">
+                        <span className={`inline-block px-1.5 py-0.5 rounded text-xs font-medium ${typeBadge}`}>
+                          {typeLabel}
+                        </span>
+                      </td>
+                      <td className="py-1.5">
+                        <span
+                          title={!sent ? n.status : undefined}
+                          className={`inline-block px-1.5 py-0.5 rounded text-xs font-medium ${
+                            sent
+                              ? "bg-green-100 text-green-700"
+                              : "bg-red-100 text-red-700 cursor-help"
+                          }`}
+                        >
+                          {sent ? "✓ Sent" : "✗ Failed"}
+                        </span>
+                      </td>
+                      <td className="py-1.5 text-gray-500 text-xs max-w-[160px] truncate">{preview}</td>
+                      <td className="py-1.5 text-right text-gray-400 text-xs">
+                        {new Date(n.sent_at).toLocaleTimeString()}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </Card.Content>
+      </Card>
 
       {/* Active hold details */}
       {hold && (
