@@ -19,7 +19,9 @@
       "Bash(tail:*)",
       "Bash(npx:*)",
       "Bash(cd /Users/reuben.frith/code/sandbox/clearskies/addin && ./node_modules/.bin/tsc --noEmit 2>&1)",
-      "Bash(/Users/reuben.frith/code/sandbox/clearskies/addin/node_modules/.bin/tsc:*)"
+      "Bash(/Users/reuben.frith/code/sandbox/clearskies/addin/node_modules/.bin/tsc:*)",
+      "Bash(git diff-tree:*)",
+      "Bash(git mv:*)"
     ]
   }
 }
