@@ -15,7 +15,7 @@ Meanwhile:
 - **OSHA requires documented proof** that a work hold was issued, who received it, and when work resumed — but most companies rely on paper logs or memory
 - **Generic weather alerts go to everyone**, regardless of whether they're on the affected site or 20 miles away
 
-Existing solutions like Perry Weather send site-wide sirens and mass SMS blasts. They don't know where your fleet is. **Geotab does.**
+Existing solutions like Perry Weather send site-wide sirens and mass alerts. They don't know where your fleet is. **Geotab does.**
 
 ---
 
@@ -25,7 +25,7 @@ ClearSkies connects Geotab's real-time vehicle tracking with hyper-local weather
 
 1. **Automatically detect** when OSHA weather thresholds are breached at any active job site
 2. **Identify exactly which vehicles and operators** are on that site at that moment using Geotab geofence zones
-3. **Send targeted SMS alerts** via Twilio — only to drivers confirmed on the affected site
+3. **Send targeted in-cab alerts** via the Geotab TextMessage API — only to drivers confirmed on the affected site
 4. **Log a timestamped, OSHA-compliant hold record** including weather snapshot, vehicle list, and GPS positions
 5. **Issue the all-clear automatically** once the hold period expires, notifying drivers to resume work
 
@@ -39,11 +39,11 @@ All visible and controllable from a **MyGeotab Add-In dashboard** embedded direc
 
 1. Live dashboard shows all job sites with GREEN/AMBER/RED weather status
 2. Storm threshold breached → site flips RED, hold timer starts
-3. ClearSkies resolves 4 vehicles confirmed on site via Geotab
-4. SMS fires to those 4 drivers only — pull out phone to show live
+3. ClearSkies resolves vehicles confirmed on site via Geotab zone query
+4. In-cab TextMessage fires to those vehicles only — pull up MyGeotab to show live
 5. Hold management page shows driver names, vehicle IDs, GPS positions
 6. 30-minute countdown runs — or manager issues manual all-clear
-7. All-clear SMS fires, compliance log records the full event
+7. All-clear message fires, compliance log records the full event
 
 ---
 
@@ -69,12 +69,13 @@ Open-Meteo API (weather)
 ClearSkies API (FastAPI/Python — hosted on Railway)
         │
         ├── APScheduler (polls every 5 min)
-        │       ├── Weather poller   →  Open-Meteo per site
-        │       ├── Threshold engine →  OSHA rules evaluation
-        │       ├── Geotab resolver  →  vehicles inside affected zones
-        │       └── Twilio SMS       →  targeted alerts to on-site drivers only
+        │       ├── Weather poller      →  Open-Meteo per site
+        │       ├── Threshold engine    →  OSHA rules evaluation
+        │       ├── Geotab zone query   →  vehicles inside affected zones
+        │       └── Geotab TextMessage  →  in-cab alerts to on-site drivers only
         │
         ├── REST API  →  sites, holds, logs endpoints
+        │       └── Auth: Geotab session header verification
         │
         └── Railway PostgreSQL  →  hold records + compliance log
                 │
@@ -97,11 +98,11 @@ ClearSkies API (FastAPI/Python — hosted on Railway)
 | API hosting | Railway.app |
 | Weather data | Open-Meteo (free, no API key) |
 | Fleet data | Geotab SDK + MyGeotab API |
-| SMS alerts | Twilio |
+| In-cab alerts | Geotab TextMessage API |
 | Database | Railway PostgreSQL (asyncpg) |
 | Add-In frontend | React + Vite + Tailwind CSS |
 | Add-In hosting | GitHub Pages |
-| API auth | `X-Api-Key` header (shared secret) |
+| API auth | Geotab session header verification |
 
 ---
 
@@ -111,7 +112,9 @@ ClearSkies API (FastAPI/Python — hosted on Railway)
 clearskies/
 ├── api/                           # FastAPI backend (deployed to Railway)
 │   ├── main.py                    # App entry point, CORS, router registration
-│   ├── auth.py                    # API key authentication dependency
+│   ├── auth/
+│   │   ├── dependencies.py        # Geotab session auth FastAPI dependency
+│   │   └── geotab.py              # Session verification against MyGeotab API
 │   ├── database.py                # asyncpg connection pool + row serialiser
 │   ├── schema.sql                 # PostgreSQL schema (run once on first deploy)
 │   ├── requirements.txt
@@ -121,7 +124,7 @@ clearskies/
 │   │   ├── weather.py             # Open-Meteo API calls per site
 │   │   ├── thresholds.py          # OSHA rules evaluation
 │   │   ├── geotab.py              # Geotab auth + zone/vehicle queries
-│   │   └── alerts.py              # Twilio SMS dispatch
+│   │   └── alerts.py              # Geotab TextMessage dispatch
 │   └── routes/
 │       ├── sites.py               # GET /api/sites, GET /api/sites/:id
 │       ├── holds.py               # GET/POST /api/holds, PATCH /api/holds/:id/clear
@@ -143,7 +146,7 @@ clearskies/
 │   │   └── lib/
 │   │       ├── api.ts             # All fetch calls to the FastAPI backend
 │   │       ├── types.ts
-│   │       └── geotabContext.tsx
+│   │       └── geotabContext.tsx  # MyGeotab session context + Geotab JS API
 │   └── config.json                # MyGeotab Add-In manifest
 │
 └── .github/workflows/deploy.yml   # Builds addin → deploys to GitHub Pages
@@ -154,8 +157,7 @@ clearskies/
 ## Getting Started
 
 ### Prerequisites
-- Geotab demo database account
-- Twilio account (free trial)
+- Geotab demo database account (provides fleet + zone data + TextMessage API)
 - Railway account (free tier works)
 - Python 3.11+
 - Node.js 20+
@@ -184,14 +186,8 @@ GEOTAB_DATABASE=your-database-name
 GEOTAB_USERNAME=your@email.com
 GEOTAB_PASSWORD=your-password
 
-TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-TWILIO_AUTH_TOKEN=your-auth-token
-TWILIO_FROM_NUMBER=+1xxxxxxxxxx
-
 POLL_INTERVAL_MINUTES=5
 DEMO_MODE=false
-
-API_KEY=generate-a-random-secret-here   # python3 -c "import secrets; print(secrets.token_hex(32))"
 ```
 
 ### 3. Set up the database
@@ -216,7 +212,6 @@ uvicorn main:app --reload
 cd addin
 cp .env.example .env
 # Set VITE_API_URL=http://localhost:8000 for local dev
-# Set VITE_API_KEY to the same value as API_KEY above
 npm install
 npm run dev
 ```
@@ -224,6 +219,8 @@ npm run dev
 ### 6. Load the Add-In in MyGeotab
 
 In MyGeotab → Administration → Add-Ins, add the config from `addin/config.json` pointing to your GitHub Pages URL (or `localhost:5173` for local dev).
+
+The add-in forwards the signed-in user's Geotab session credentials to the API on every request — no separate login required.
 
 ### 7. Set up Geotab job site zones
 
@@ -234,7 +231,7 @@ INSERT INTO sites (name, address, lat, lng, geotab_zone_id) VALUES
   ('Site A — Downtown Tower', '123 Main St, Chicago, IL', 41.8781, -87.6298, 'zABCDE12345');
 ```
 
-The add-in now renders **every** zone available to the signed-in MyGeotab user, coloring the zones that match `sites.geotab_zone_id`. Because those polygons come straight from the MyGeotab JavaScript API, they only appear when the add-in runs inside MyGeotab (the standalone Vite dev server intentionally skips them).
+The add-in renders **every** zone available to the signed-in MyGeotab user, colouring the zones that match `sites.geotab_zone_id`. Because zone polygons come straight from the MyGeotab JavaScript API, they only appear when the add-in runs inside MyGeotab (the standalone Vite dev server intentionally skips them).
 
 ---
 
@@ -250,7 +247,7 @@ The add-in now renders **every** zone available to the signed-in MyGeotab user, 
 
 ### Add-In → GitHub Pages
 
-1. Add `VITE_API_URL` and `VITE_API_KEY` as GitHub Actions secrets
+1. Add `VITE_API_URL` as a GitHub Actions secret
 2. Push to `main` — the workflow in `.github/workflows/deploy.yml` builds and deploys automatically
 
 ---
@@ -266,6 +263,7 @@ CREATE TABLE sites (
   lat              FLOAT NOT NULL,
   lng              FLOAT NOT NULL,
   geotab_zone_id   TEXT NOT NULL UNIQUE,
+  radius_m         INT NOT NULL DEFAULT 200,
   active           BOOLEAN NOT NULL DEFAULT true,
   created_at       TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -285,17 +283,20 @@ CREATE TABLE holds_log (
   created_at         TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- SMS log (one row per message sent)
+-- Message log (one row per alert sent)
 CREATE TABLE notification_log (
-  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  hold_id       UUID NOT NULL REFERENCES holds_log(id) ON DELETE CASCADE,
-  driver_name   TEXT,
-  phone_number  TEXT NOT NULL,
-  message_type  TEXT NOT NULL CHECK (message_type IN ('hold', 'all_clear')),
-  sent_at       TIMESTAMPTZ NOT NULL,
-  twilio_sid    TEXT,
-  status        TEXT,
-  created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+  id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  hold_id           UUID REFERENCES holds_log(id) ON DELETE CASCADE,
+  site_id           UUID REFERENCES sites(id),
+  driver_name       TEXT,
+  phone_number      TEXT,
+  geotab_device_id  TEXT,
+  message_type      TEXT NOT NULL CHECK (message_type IN ('hold', 'all_clear', 'custom')),
+  sent_at           TIMESTAMPTZ NOT NULL,
+  geotab_message_id TEXT,
+  message_body      TEXT,
+  status            TEXT,
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 ```
 
@@ -303,10 +304,11 @@ CREATE TABLE notification_log (
 
 ## Roadmap
 
+- [ ] **Twilio SMS fallback** — send SMS to driver phone numbers when a vehicle has no in-cab display
 - [ ] **Procore integration** — auto-log weather delay events on project daily report
 - [ ] **PDF compliance export** — OSHA-ready hold report for legal/insurance claims
 - [ ] **Tomorrow.io lightning** — upgrade from probability to real-time strike detection
-- [ ] **Slack / Teams notifications** — site manager channel alerts
+- [ ] **Slack / Teams notifications** — site manager channel alerts alongside driver alerts
 - [ ] **Per-site custom thresholds** — crane sites get stricter wind limits than ground crews
 - [ ] **Predictive holds** — warn managers 2 hours before threshold breach using forecast data
 
@@ -318,7 +320,7 @@ CREATE TABLE notification_log (
 |---|---|---|---|
 | Hyper-local weather | ✅ | ❌ | ✅ |
 | Knows which vehicles are on site | ❌ | ❌ | ✅ |
-| Targeted SMS to on-site drivers only | ❌ | ❌ | ✅ |
+| Targeted alerts to on-site drivers only | ❌ | ❌ | ✅ |
 | GPS-verified equipment stop proof | ❌ | ❌ | ✅ |
 | OSHA-compliant hold log | Partial | ❌ | ✅ |
 | Lives inside existing fleet platform | ❌ | ❌ | ✅ |
@@ -328,9 +330,8 @@ CREATE TABLE notification_log (
 
 ## Built With
 
-- [Geotab SDK](https://developers.geotab.com) — vehicle tracking & zone data
+- [Geotab SDK](https://developers.geotab.com) — vehicle tracking, zone data & in-cab messaging
 - [Open-Meteo](https://open-meteo.com) — free hyper-local weather API
-- [Twilio](https://twilio.com) — SMS delivery
 - [FastAPI](https://fastapi.tiangolo.com) — async Python API framework
 - [Railway](https://railway.app) — API + PostgreSQL hosting
 - [GitHub Pages](https://pages.github.com) — Add-In hosting
