@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>ClearSkies Slides</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',sans-serif;background:#0f172a;color:#f1f5f9;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden}
+  .deck{width:860px;height:484px;position:relative}
+  .slide{width:100%;height:100%;position:absolute;top:0;left:0;display:none;flex-direction:column;justify-content:center;align-items:center;padding:48px 56px;border-radius:16px;text-align:center}
+  .slide.active{display:flex}
+
+  .s1{background:linear-gradient(135deg,#0f172a 0%,#131f35 100%)}
+  .s2{background:linear-gradient(135deg,#0f172a 0%,#141c2e 100%)}
+  .s3{background:linear-gradient(135deg,#0f172a 0%,#1a1520 100%)}
+  .s4{background:linear-gradient(135deg,#0f172a 0%,#111d18 100%)}
+  .s5{background:linear-gradient(135deg,#0f172a 0%,#131f35 100%)}
+  .s6{background:linear-gradient(135deg,#0f172a 0%,#1a1a14 100%)}
+  .s7{background:linear-gradient(135deg,#0f172a 0%,#151520 100%)}
+  .s8{background:linear-gradient(135deg,#0f172a 0%,#131f35 100%)}
+  .s9{background:linear-gradient(135deg,#0f172a 0%,#131f35 100%)}
+
+  .title{font-size:52px;font-weight:800;letter-spacing:-1px;background:linear-gradient(90deg,#38bdf8,#7dd3fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .lbl-red{font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#f87171;margin-bottom:14px}
+  .lbl-green{font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#4ade80;margin-bottom:14px}
+  .lbl-blue{font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#60a5fa;margin-bottom:14px}
+  .lbl-amber{font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#fbbf24;margin-bottom:14px}
+  .lbl-indigo{font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#a5b4fc;margin-bottom:10px}
+
+  h2{font-size:34px;font-weight:800;margin-bottom:20px;line-height:1.2}
+
+  .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;width:100%}
+  .stat{background:rgba(255,255,255,.05);border:1px solid rgba(248,113,113,.3);border-radius:12px;padding:18px;text-align:left}
+  .stat .num{font-size:32px;font-weight:800;color:#f87171}
+  .stat .desc{font-size:13px;color:#fca5a5;margin-top:4px;line-height:1.4}
+
+  .steps{display:flex;flex-direction:column;gap:12px;width:100%;text-align:left}
+  .step{display:flex;align-items:center;gap:14px;background:rgba(255,255,255,.05);border:1px solid rgba(74,222,128,.2);border-radius:10px;padding:14px 18px}
+  .step-num{width:32px;height:32px;border-radius:50%;background:#166534;color:#4ade80;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .step-text{font-size:14px;color:#d1fae5;line-height:1.4}
+  .step-text strong{color:#fff}
+
+  .arch{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:20px}
+  .box{background:rgba(255,255,255,.07);border:1px solid rgba(96,165,250,.3);border-radius:10px;padding:12px 16px;font-size:13px;font-weight:600;color:#bfdbfe;text-align:center;min-width:110px}
+  .box .ico{font-size:22px;margin-bottom:4px}
+  .gbox{border-color:rgba(0,180,120,.5);color:#6ee7b7}
+  .arr{font-size:22px;color:#3b82f6}
+
+  table{width:100%;border-collapse:collapse;font-size:13px;margin-top:12px}
+  th{background:rgba(251,191,36,.15);color:#fbbf24;padding:10px 12px;text-align:left;font-weight:700;font-size:11px;letter-spacing:.5px}
+  td{padding:10px 12px;color:#fef3c7;border-bottom:1px solid rgba(251,191,36,.1)}
+  tr:last-child td{border-bottom:none}
+
+  .comp-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:18px}
+  .comp-table th{padding:8px 12px;color:#a5b4fc;font-size:11px;font-weight:700;letter-spacing:.5px;text-align:center;border-bottom:1px solid rgba(165,180,252,.15)}
+  .comp-table td{padding:9px 12px;color:#e2e8f0;text-align:center;border-bottom:1px solid rgba(255,255,255,.05)}
+  .comp-table td:first-child{text-align:left;color:#c7d2fe}
+  .yes{color:#4ade80;font-size:17px}
+  .no{color:#f87171;font-size:17px}
+  .part{color:#fbbf24;font-size:13px}
+  .hl{background:rgba(99,102,241,.15)}
+
+  .row{display:flex;align-items:center;gap:14px;background:rgba(255,255,255,.05);border:1px solid rgba(96,165,250,.2);border-radius:10px;padding:13px 16px}
+  .row span:first-child{font-size:22px;flex-shrink:0}
+  .row span:last-child{font-size:13px;color:#bfdbfe;line-height:1.4;text-align:left}
+  .row span:last-child strong{color:#fff}
+
+  .nav{display:flex;gap:12px;margin-top:20px;align-items:center}
+  .nav button{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);color:#e2e8f0;padding:8px 22px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;transition:.15s}
+  .nav button:hover{background:rgba(255,255,255,.15)}
+  .nav button:disabled{opacity:.3;cursor:default}
+  .counter{font-size:13px;color:#64748b;min-width:60px;text-align:center}
+  .dots{display:flex;gap:6px;margin-top:12px}
+  .dot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.2);cursor:pointer;transition:.15s}
+  .dot.on{background:#38bdf8}
+</style>
+</head>
+<body>
+<div class="deck">
+
+  <!-- S1: Title -->
+  <div class="slide s1 active">
+    <div style="font-size:64px;margin-bottom:12px">🌤️</div>
+    <div class="title">ClearSkies</div>
+    <div style="margin-top:14px;font-size:18px;color:#94a3b8;max-width:540px;line-height:1.5">Simplify your job site weather compliance</div>
+    <div style="margin-top:28px;background:#1e3a5f;border:1px solid #38bdf8;color:#7dd3fc;padding:6px 18px;border-radius:99px;font-size:13px;font-weight:600">Geotab Vibe Coding Challenge 2026</div>
+  </div>
+
+  <!-- S2: About Me -->
+  <div class="slide s2">
+    <div style="display:flex;align-items:center;gap:20px;margin-bottom:22px;width:100%">
+      <div style="width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,#3b82f6,#0ea5e9);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0">👋</div>
+      <div style="text-align:left">
+        <div style="font-size:28px;font-weight:800;color:#fff;line-height:1">Reuben Frith</div>
+        <div style="font-size:13px;color:#60a5fa;font-weight:600;margin-top:4px">Senior Software Engineer · Nova Systems · Melbourne, AU</div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:11px;width:100%">
+      <div class="row"><span>🗺️</span><span>At Nova I've built <strong>map-heavy apps for local government</strong> and am currently working on our <strong>Global Alerting Platform</strong> — real-time monitoring pipelines that need to be fast and reliable</span></div>
+      <div class="row"><span>🚗</span><span>That Alerting Platform work introduced me to <strong>Geotab</strong> — and the moment I understood what real-time fleet location could do, I knew exactly what I wanted to build</span></div>
+      <div class="row"><span>🤖</span><span>Oh — and <strong>Claude Code</strong> and I vibed this whole app together.</span></div>
+    </div>
+  </div>
+
+  <!-- S3: Problem -->
+  <div class="slide s3">
+    <div class="lbl-red">⚡ The Problem</div>
+    <h2>Weather is one of Australia's biggest<br>construction killers</h2>
+    <div class="stat-grid">
+      <div class="stat"><div class="num">45%</div><div class="desc">Of construction projects globally impacted by adverse weather — Australia's volatile climate makes it worse</div></div>
+      <div class="stat"><div class="num">+25%</div><div class="desc">Average project duration increase caused by weather-related delays (MDPI, 2025)</div></div>
+      <div class="stat"><div class="num">35°C</div><div class="desc">CFMEU stop-work temperature — but most sites still rely on paper logs to prove compliance</div></div>
+      <div class="stat"><div class="num">📢 Chaos</div><div class="desc">When a storm hits: check weather → call supervisor → radio crews → hope they're reachable</div></div>
+    </div>
+  </div>
+
+  <!-- S4: Solution -->
+  <div class="slide s4">
+    <div class="lbl-green">✅ The Solution</div>
+    <h2 style="color:#4ade80">ClearSkies automates the entire workflow</h2>
+    <div class="steps">
+      <div class="step"><div class="step-num">1</div><div class="step-text"><strong>Detect</strong> — Monitors weather every 5 min against OSHA thresholds at every job site</div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-text"><strong>Identify</strong> — Uses Geotab geofence zones to find exactly which vehicles are on-site right now</div></div>
+      <div class="step"><div class="step-num">3</div><div class="step-text"><strong>Alert</strong> — Sends targeted <strong>in-cab messages</strong> via the Geotab TextMessage API — only to on-site drivers</div></div>
+      <div class="step"><div class="step-num">4</div><div class="step-text"><strong>Log</strong> — Creates an OSHA-compliant hold record with weather snapshot, vehicles & GPS positions</div></div>
+      <div class="step"><div class="step-num">5</div><div class="step-text"><strong>Clear</strong> — Issues all-clear automatically when the hold expires, or manually from the dashboard</div></div>
+    </div>
+  </div>
+
+  <!-- S5: Architecture -->
+  <div class="slide s5">
+    <div class="lbl-blue">🏗️ How It Works</div>
+    <h2 style="color:#93c5fd">100% native to Geotab — no extra services</h2>
+    <div class="arch">
+      <div class="box"><div class="ico">🌦️</div>Open-Meteo<br>Weather</div>
+      <div class="arr">→</div>
+      <div class="box"><div class="ico">⚙️</div>FastAPI<br>Backend</div>
+      <div class="arr">→</div>
+      <div class="box gbox"><div class="ico">📍</div>Geotab<br>Zone API</div>
+      <div class="arr">→</div>
+      <div class="box gbox"><div class="ico">🚛</div>Geotab<br>TextMessage</div>
+    </div>
+    <div class="arch" style="margin-top:16px">
+      <div class="box" style="min-width:160px"><div class="ico">🗄️</div>PostgreSQL<br>Compliance Log</div>
+      <div class="arr">→</div>
+      <div class="box gbox" style="min-width:210px"><div class="ico">📊</div>MyGeotab Add-In<br>Dashboard</div>
+    </div>
+    <p style="margin-top:16px;color:#6ee7b7;font-size:13px">Polls every 5 min · Auth via Geotab session · Zero third-party messaging services</p>
+  </div>
+
+  <!-- S6: OSHA -->
+  <div class="slide s6">
+    <div class="lbl-amber">⚠️ OSHA-Aligned Rules</div>
+    <h2 style="color:#fbbf24">Built-in compliance thresholds</h2>
+    <table>
+      <tr><th>Hazard</th><th>Threshold</th><th>Hold Duration</th></tr>
+      <tr><td>⚡ Lightning / Thunderstorm</td><td>Probability &gt; 40%</td><td>30 minutes (30/30 rule)</td></tr>
+      <tr><td>💨 High Wind — General</td><td>Wind ≥ 40 mph</td><td>Until wind drops</td></tr>
+      <tr><td>🏗️ High Wind — Materials</td><td>Wind ≥ 30 mph</td><td>Until wind drops</td></tr>
+      <tr><td>🌡️ Extreme Heat</td><td>Feels like ≥ 38°C / 100°F</td><td>Ongoing advisory</td></tr>
+    </table>
+    <p style="margin-top:16px;color:#d97706;font-size:12px">References: OSHA 1926.968 · OSHA 29 CFR 1926.451(f)(12) · OSHA/NOAA 30/30 Rule</p>
+  </div>
+
+
+  <!-- S8: Live Demo -->
+  <div class="slide s5">
+    <div style="font-size:56px;margin-bottom:20px">🎬</div>
+    <div style="font-size:58px;font-weight:800;letter-spacing:-2px;background:linear-gradient(90deg,#38bdf8,#7dd3fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1.1">Live Demo</div>
+    <div style="margin-top:20px;font-size:22px;color:#94a3b8;font-weight:500">3 sites · 1 storm · fully automated</div>
+  </div>
+
+  <!-- S9: CTA -->
+  <div class="slide s9">
+    <div style="font-size:64px;margin-bottom:12px">🌤️</div>
+    <div class="title">ClearSkies</div>
+    <div style="margin-top:18px;display:flex;gap:32px;justify-content:center">
+      <div style="text-align:center"><div style="font-size:28px;font-weight:800;color:#38bdf8">$5B</div><div style="font-size:12px;color:#94a3b8;margin-top:4px">industry problem</div></div>
+      <div style="text-align:center"><div style="font-size:28px;font-weight:800;color:#4ade80">5 min</div><div style="font-size:12px;color:#94a3b8;margin-top:4px">automated detection</div></div>
+      <div style="font-size:28px;font-weight:800;color:#fbbf24;text-align:center"><div>100%</div><div style="font-size:12px;color:#94a3b8;margin-top:4px;font-weight:400">OSHA compliant</div></div>
+    </div>
+    <div style="margin-top:24px;font-size:16px;color:#94a3b8;line-height:1.8">
+      Real-time weather + Geotab fleet data + Geotab in-cab messaging<br>
+      <span style="color:#e2e8f0;font-weight:600">= zero paperwork, zero missed holds, zero third-party dependencies</span>
+    </div>
+    <div style="margin-top:22px;background:rgba(56,189,248,.1);border:1px solid #38bdf8;border-radius:12px;padding:12px 28px;font-size:13px;color:#7dd3fc">
+      github.com/reubenfrith/clearskies · Geotab Vibe Coding Challenge 2026
+    </div>
+  </div>
+
+</div>
+
+<div class="nav">
+  <button id="prev" onclick="go(-1)" disabled>← Prev</button>
+  <span class="counter" id="counter">1 / 9</span>
+  <button id="next" onclick="go(1)">Next →</button>
+</div>
+<div class="dots" id="dots"></div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  let cur = 0;
+  const dotsEl = document.getElementById('dots');
+  slides.forEach((_,i) => {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i===0 ? ' on' : '');
+    d.onclick = () => show(i);
+    dotsEl.appendChild(d);
+  });
+  function show(n) {
+    slides[cur].classList.remove('active');
+    dotsEl.children[cur].classList.remove('on');
+    cur = n;
+    slides[cur].classList.add('active');
+    dotsEl.children[cur].classList.add('on');
+    document.getElementById('counter').textContent = (cur+1) + ' / ' + total;
+    document.getElementById('prev').disabled = cur === 0;
+    document.getElementById('next').disabled = cur === total - 1;
+  }
+  function go(d) { show(cur + d); }
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' && cur < total-1) go(1);
+    if (e.key === 'ArrowLeft'  && cur > 0)       go(-1);
+  });
+</script>
+</body>
+</html>
